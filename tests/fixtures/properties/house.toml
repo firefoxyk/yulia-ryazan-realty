@@ -1,0 +1,21 @@
+# Синтетические данные, не реальное объявление.
+id = "test-house"
+slug = "test-house"
+status = "active"
+ever_published = true
+featured = false
+type = "house"
+market = "secondary"
+title = "Тестовый дом — не объявление"
+price = 6700000
+city = "Тестовый город"
+description = "Синтетический пример дома для проверки."
+area_m2 = 120
+plot_area = 8
+plot_unit = "sotka"
+rooms = 4
+floors = 2
+
+[[photos]]
+path = "shared/room-a.svg"
+alt = "Нейтральная тестовая иллюстрация дома"

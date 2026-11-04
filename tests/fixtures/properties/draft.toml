@@ -1,0 +1,11 @@
+# Только синтетические маркеры, никакого настоящего непубличного содержания.
+id = "test-draft"
+slug = "test-draft"
+status = "draft"
+ever_published = false
+title = "SYNTHETIC-DRAFT-NOT-FOR-BUILD"
+description = "SYNTHETIC-PRIVATE-MARKER"
+
+[[photos]]
+path = "draft-only.svg"
+alt = "SYNTHETIC-DRAFT-ALT"

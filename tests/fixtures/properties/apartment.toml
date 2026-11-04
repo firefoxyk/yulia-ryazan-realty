@@ -1,0 +1,34 @@
+# Синтетические данные для локальной проверки. Не реальное объявление.
+id = "test-apartment"
+slug = "test-apartment"
+status = "active"
+ever_published = true
+published_at = 2026-11-04
+featured = true
+type = "apartment"
+market = "primary"
+title = "Тестовая квартира — не объявление"
+price = 4200000
+city = "Тестовый город"
+district = "Условный район"
+public_address = "Условная часть адреса"
+description = "Синтетический пример квартиры для проверки генератора. Не предназначен для продажи."
+area_m2 = 54.5
+rooms = 2
+floor = 3
+floors = 9
+cover = 1
+floor_plan = "shared/plan.svg"
+
+[features]
+"Отделка" = "Тестовая характеристика"
+
+[[photos]]
+path = "shared/room-a.svg"
+alt = "Тестовая нейтральная иллюстрация A"
+caption = "Первая фотография в тестовом списке"
+
+[[photos]]
+path = "shared/room-b.svg"
+alt = "Тестовая нейтральная иллюстрация B"
+caption = "Главная фотография: вторая в списке"

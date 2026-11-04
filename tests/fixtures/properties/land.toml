@@ -1,0 +1,12 @@
+# Синтетические данные. Намеренно без цены, фото и неприменимых полей.
+id = "test-land"
+slug = "test-land"
+status = "active"
+ever_published = true
+featured = true
+type = "land"
+title = "Тестовый участок — не объявление"
+city = "Тестовый город"
+description = "Синтетический пример участка без цены и фотографий."
+plot_area = 0.15
+plot_unit = "ha"

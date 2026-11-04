@@ -1,6 +1,9 @@
 """Integration checks for static routing and local links, without dependencies."""
 from html.parser import HTMLParser
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
 from threading import Thread
 from urllib.error import HTTPError
@@ -32,10 +35,13 @@ class Links(HTMLParser):
 
 
 def verify(base, demo, output):
+    records = builder.load_catalog()
+    active = [record for record in records if record["status"] == "active"]
     builder.build(base, demo, output)
     expected = {"index.html", "catalog/index.html", "about/index.html", "contacts/index.html"}
     if demo:
         expected.add("objects/demo/index.html")
+    expected.update(f'objects/{record["slug"]}/index.html' for record in records if record["ever_published"] and record["status"] != "draft")
     assert {str(p.relative_to(output)).replace("\\", "/") for p in output.rglob("*.html")} == expected
     with builder.preview_server(base, output, port=0) as server:
         worker = Thread(target=server.serve_forever, daemon=True)
@@ -84,7 +90,7 @@ def verify(base, demo, output):
                     assert (output / "images/yulia-laryushkina.jpg").read_bytes() == (builder.ROOT / "public/images/yulia-laryushkina.jpg").read_bytes()
             home_html = (output / "index.html").read_text(encoding="utf-8")
             expected_sections = ['id="hero-title"']
-            if demo:
+            if (demo and not active) or any(record["featured"] for record in active):
                 expected_sections.append('id="properties-title"')
                 assert '<h2 id="properties-title">Актуальные объекты</h2>' in home_html
             else:
@@ -97,7 +103,7 @@ def verify(base, demo, output):
             assert "Новоселье" in (output / "about/index.html").read_text(encoding="utf-8")
             contact_html = (output / "contacts/index.html").read_text(encoding="utf-8")
             assert "wa.me" not in contact_html and "t.me/" not in contact_html and "max.ru/" not in contact_html
-            if demo:
+            if demo and not active:
                 assert 'data-demo="property-card"' in (output / "index.html").read_text(encoding="utf-8")
                 assert 'data-demo="property-card"' in (output / "catalog/index.html").read_text(encoding="utf-8")
             missing = [base + "missing/"]
@@ -127,4 +133,6 @@ if __name__ == "__main__":
         # Rebuild the same output to ensure a disabled demo leaves no stale page.
         verify("/yulia-ryazan-realty/", False, output)
         verify("/", False, output)
+        shutil.rmtree(temporary, onexc=builder.retry_windows_lock)
+    subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_properties.py")], check=True)
     print("Все проверки пройдены.")

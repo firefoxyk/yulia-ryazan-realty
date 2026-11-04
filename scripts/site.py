@@ -6,12 +6,18 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import re
 import shutil
+import sys
 from string import Template
 import tomllib
 import time
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
+# Also support the existing importlib-based checks and browser utilities.
+if str(ROOT / "scripts") not in sys.path:
+    sys.path.insert(0, str(ROOT / "scripts"))
+from property_data import load_catalog
+from property_views import card, section, object_page, publish_media
 DIST = ROOT / "dist"
 PAGES = (
     ("", "Главная", "Юлия Ларюшкина — агент по недвижимости в Рязани. Покупка и продажа квартир."),
@@ -57,8 +63,14 @@ def retry_windows_lock(operation, path, error):
     raise error
 
 
-def build(base, include_demo, output=DIST):
+def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False):
+    # Approval notices are independent of synthetic development content.
+    if preliminary:
+        include_demo = False
+        test_data = False
     contact_values = contacts()
+    records = load_catalog(test_data=test_data and include_demo)
+    active = [record for record in records if record["status"] == "active"]
     output = output.resolve()
     # Only generated directories explicitly owned by this project may be replaced.
     if output != DIST and not (output.parent.parent == ROOT and output.parent.name.startswith(".check-")):
@@ -74,8 +86,12 @@ def build(base, include_demo, output=DIST):
     def render(path, **values):
         return Template((ROOT / path).read_text(encoding="utf-8")).substitute(base=base, **values)
 
+    legacy_demo = include_demo and not active and not test_data
     demo_cards = render("src/demo/card.html") if include_demo else ""
-    demo_section = render("src/demo/collection.html", demo_cards=demo_cards) if include_demo else ""
+    demo_section = render("src/demo/collection.html", demo_cards=demo_cards) if legacy_demo else ""
+    property_cards = "".join(card(record, base) for record in active) + (demo_cards if legacy_demo else "")
+    featured_cards = "".join(card(record, base) for record in active if record["featured"])
+    property_section = section(featured_cards) if featured_cards else demo_section
     portrait_note = '<span class="portrait-note" data-demo="portrait-note">Место для фотографии Юлии</span>' if include_demo else ""
     photo_available = (ROOT / "public/images/yulia-laryushkina.jpg").is_file()
     portrait_content = (
@@ -85,13 +101,21 @@ def build(base, include_demo, output=DIST):
     portrait = render("src/templates/portrait.html", portrait_class="portrait-photo" if photo_available else "portrait-art", portrait_content=portrait_content)
     if include_demo:
         shutil.copyfile(ROOT / "src/demo/property-placeholder.svg", output / "assets/demo-property.svg")
+    publish_media(records, output)
+    for record in records:
+        if record["status"] == "draft" or not record["ever_published"]:
+            continue
+        title, page_content = object_page(record, base, **{key: contact_values[key] for key in ("phone_href", "phone_display")})
+        pages.append((f'objects/{record["slug"]}/', title, "Информация об объекте недвижимости.", page_content))
     values = dict(
         portrait=portrait,
         demo_cards=demo_cards,
         demo_section=demo_section,
-        catalog_intro='<p class="lead" data-demo="catalog-intro">Пример карточки для обсуждения дизайна. Не является объявлением.</p>' if include_demo else "",
-        catalog_empty="" if include_demo else f'<div class="empty-state"><h2>В каталоге пока нет объектов</h2><p>Актуальные предложения появятся здесь.</p><a class="text-link" href="{base}contacts/">Перейти к контактам ↗</a></div>',
-        about_preview='<p class="preview-note" data-demo="about-note">Материал для согласования: формулировки о сотрудничестве с агентством, участии специалистов и проверке документов нужно подтвердить перед публикацией.</p>' if include_demo else "",
+        property_cards=property_cards,
+        property_section=property_section,
+        catalog_intro='<p class="lead" data-demo="catalog-intro">Тестовые примеры для проверки данных, не реальные объявления.</p>' if test_data and include_demo else ('<p class="lead" data-demo="catalog-intro">Пример карточки для обсуждения дизайна. Не является объявлением.</p>' if legacy_demo else ""),
+        catalog_empty="" if property_cards else f'<div class="empty-state"><h2>Актуальные объекты пока не опубликованы</h2><p>Обсудить покупку или продажу недвижимости можно с Юлией.</p><a class="text-link" href="{base}contacts/">Перейти к контактам ↗</a></div>',
+        about_preview=('<p class="preview-note" ' + ('data-review="about-note"' if preliminary else 'data-demo="about-note"') + '>Материал для согласования: формулировки об услугах, сотрудничестве с агентством, участии специалистов и проверке документов нужно подтвердить с Юлией перед полноценным запуском.</p>') if include_demo or preliminary else "",
         **contact_values,
     )
     for route, title, description, source in pages:
@@ -99,13 +123,13 @@ def build(base, include_demo, output=DIST):
             f'<a href="{base}{path}"' + (' aria-current="page"' if path == route else '') + f'>{"Объекты" if path == "catalog/" else label}</a>'
             for path, label, _ in PAGES
         )
-        content = Template(source.read_text(encoding="utf-8")).substitute(base=base, **values)
+        content = Template(source.read_text(encoding="utf-8")).substitute(base=base, **values) if isinstance(source, Path) else source
         target = output / route / "index.html"
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(layout.substitute(
             title=escape(title), description=escape(description, quote=True),
             base=base, navigation=navigation, content=content, **contact_values,
-            preview_banner='<div class="preview-banner" data-demo="banner">Материалы для согласования · демонстрационные объекты</div>' if include_demo else "",
+            preview_banner=('<div class="preview-banner" data-review="banner">Предварительная версия · материалы для согласования с Юлией</div>' if preliminary else ('<div class="preview-banner" data-demo="banner">Материалы для согласования · демонстрационные объекты</div>' if include_demo else "")),
         ), encoding="utf-8")
     # GitHub Pages must serve assets without Jekyll processing.
     (output / ".nojekyll").touch()
@@ -146,11 +170,16 @@ def main():
     parser.add_argument("command", choices=("build", "dev", "preview"))
     parser.add_argument("--base-path", help="Overrides site.toml, e.g. /yulia-ryazan-realty/")
     parser.add_argument("--no-demo", action="store_true")
+    parser.add_argument("--test-data", action="store_true", help="Include isolated synthetic properties (requires demo enabled)")
+    parser.add_argument("--preliminary", action="store_true", help="Keep approval notices; force demo and test data off")
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     base, demo = settings(args.base_path, args.no_demo)
     if args.command in ("build", "dev"):
-        build(base, demo)
+        try:
+            build(base, demo, test_data=args.test_data, preliminary=args.preliminary)
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
     if args.command in ("dev", "preview"):
         if not (DIST / "index.html").exists():
             parser.error("Сначала выполните build.")

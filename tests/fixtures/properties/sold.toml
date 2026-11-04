@@ -1,0 +1,15 @@
+# Синтетическая старая ссылка, не реальное объявление.
+id = "test-sold"
+slug = "test-sold"
+status = "sold"
+ever_published = true
+type = "apartment"
+title = "OLD-SOLD-TITLE"
+price = 1234567
+city = "OLD-SOLD-CITY"
+public_address = "OLD-SOLD-ADDRESS"
+description = "OLD-SOLD-DESCRIPTION"
+
+[[photos]]
+path = "old-only.svg"
+alt = "OLD-SOLD-ALT"

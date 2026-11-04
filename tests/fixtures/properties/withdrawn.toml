@@ -1,0 +1,7 @@
+# Синтетическая старая ссылка, не реальное объявление.
+id = "test-withdrawn"
+slug = "test-withdrawn"
+status = "withdrawn"
+ever_published = true
+title = "OLD-WITHDRAWN-TITLE"
+description = "OLD-WITHDRAWN-DESCRIPTION"
