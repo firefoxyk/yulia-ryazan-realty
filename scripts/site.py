@@ -19,6 +19,7 @@ if str(ROOT / "scripts") not in sys.path:
 from property_data import load_catalog, external_url
 from property_views import card, section, object_page, publish_media
 from catalog_views import controls
+import seo
 DIST = ROOT / "dist"
 PAGES = (
     ("", "Главная", "Юлия Ларюшкина — агент по недвижимости в Рязани. Покупка и продажа квартир."),
@@ -80,6 +81,7 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
         test_data = False
     contact_values = contacts()
     records = load_catalog(test_data=test_data and include_demo)
+    public_url = seo.public_site_url()
     active = [record for record in records if record["status"] == "active"]
     output = output.resolve()
     # Only generated directories explicitly owned by this project may be replaced.
@@ -90,7 +92,8 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
     output.mkdir(parents=True)
     shutil.copytree(ROOT / "public", output, dirs_exist_ok=True, ignore=shutil.ignore_patterns(".gitkeep"))
     layout = Template((ROOT / "src/templates/layout.html").read_text(encoding="utf-8"))
-    pages = [(route, title, description, ROOT / "src/pages" / route / "index.html") for route, title, description in PAGES]
+    pages = [(route, *seo.MAIN[route], ROOT / "src/pages" / route / "index.html") for route, _, _ in PAGES]
+    page_images = {}
     if include_demo:
         pages.append(("objects/demo/", "Демонстрационная страница объекта", "Демонстрационный объект. Не является объявлением.", ROOT / "src/demo/routing-example.html"))
     def render(path, **values):
@@ -107,11 +110,11 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
     featured_cards = "".join(card(record, base) for record in active if record["featured"])
     property_section = section(featured_cards, base=base, synthetic=all(record["_fixture"] for record in active if record["featured"])) if featured_cards else demo_section
     if any(not record["_fixture"] for record in active):
-        hero_title = "Недвижимость в Рязани"
+        hero_title = "Недвижимость в Рязани — для жизни и ваших планов"
         hero_lead = "Я Юлия Ларюшкина, агент по недвижимости в Рязани."
-        hero_description = "Посмотрите актуальные предложения или расскажите Юлии, какой объект вы ищете."
+        hero_description = "Посмотрите актуальные предложения или расскажите Юлии, какую недвижимость вы ищете."
     elif active:
-        hero_title = "Недвижимость в Рязани"
+        hero_title = "Недвижимость в Рязани — для жизни и ваших планов"
         hero_lead = "Я Юлия Ларюшкина, агент по недвижимости в Рязани."
         hero_description = "В каталоге сейчас тестовые примеры, не реальные объявления. Расскажите мне, что вы ищете, — обсудим ваш запрос."
     else:
@@ -122,6 +125,8 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
     contact_action = f'<a class="button button-{"secondary" if active else "primary"}" href="{base}contacts/">Связаться с Юлией</a>'
     hero_actions = (catalog_action if active else "") + contact_action
     photo_available = (ROOT / "public/images/yulia-laryushkina.jpg").is_file()
+    if photo_available:
+        page_images.update({route: ("images/yulia-laryushkina.jpg", "Юлия Ларюшкина, агент по недвижимости в Рязани") for route in seo.MAIN})
     portrait_content = (
         f'<img src="{base}images/yulia-laryushkina.jpg" alt="Юлия Ларюшкина, агент по недвижимости в Рязани" width="900" height="1125" fetchpriority="high" decoding="async">'
         if photo_available else render("src/templates/portrait-placeholder.html")
@@ -134,7 +139,10 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
         if record["status"] == "draft" or not record["ever_published"]:
             continue
         title, page_content = object_page(record, base, **{key: contact_values[key] for key in ("phone_href", "phone_display", "max_url")})
-        pages.append((f'objects/{record["slug"]}/', title, "Информация об объекте недвижимости.", page_content))
+        title, description, image = seo.object_metadata(record)
+        route = f'objects/{record["slug"]}/'
+        pages.append((route, title, description, page_content))
+        page_images[route] = image
     values = dict(
         portrait=portrait,
         demo_cards=demo_cards,
@@ -143,6 +151,7 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
         property_section=property_section,
         hero_description=hero_description,
         hero_title=hero_title, hero_lead=hero_lead, hero_actions=hero_actions,
+        home_max_contact=(f'<a class="text-link" href="{escape(contact_values["max_url"], quote=True)}" rel="noopener noreferrer">Написать в MAX ↗</a>' if contact_values["max_url"] else ""),
         contacts_layout="contact-grid" + ("" if contact_values["max_url"] else " contact-grid-single"),
         messenger_contact=(f'<div class="contact-tile"><p class="eyebrow">Переписка</p><h2 class="contact-person">MAX</h2><p>Напишите Юлии о покупке или продаже недвижимости.</p><a class="button button-primary" href="{escape(contact_values["max_url"], quote=True)}" rel="noopener noreferrer">Написать в MAX</a></div>' if contact_values["max_url"] else ""),
         **controls(catalog_active, base),
@@ -151,6 +160,8 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
         **contact_values,
     )
     for route, title, description, source in pages:
+        if route == "catalog/" and not active:
+            description = "Объекты пока не опубликованы. Расскажите Юлии Ларюшкиной о критериях поиска или обсудите продажу недвижимости."
         navigation = "\n".join(
             f'<a href="{base}{path}"' + (' aria-current="page"' if path == route else '') + f'>{"Объекты" if path == "catalog/" else label}</a>'
             for path, label, _ in PAGES
@@ -159,12 +170,13 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
         target = output / route / "index.html"
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(layout.substitute(
-            title=escape(title), description=escape(description, quote=True),
+            **seo.metadata(public_url, route, title, description, page_images.get(route)),
             base=base, navigation=navigation, content=content, **contact_values,
             demo_banner='<div class="preview-banner" data-demo="banner">Демонстрационный режим · объекты не являются объявлениями</div>' if include_demo else "",
         ), encoding="utf-8")
     # GitHub Pages must serve assets without Jekyll processing.
     (output / ".nojekyll").touch()
+    seo.write_sitemap(output, public_url, records)
     print(f"Собрано {len(pages)} страниц; base_path={base}; папка: {output}")
 
 

@@ -26,9 +26,13 @@ class Links(HTMLParser):
         super().__init__()
         self.urls = []
         self.ids = set()
+        self.canonical = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == "link" and attrs.get("rel") == "canonical":
+            self.canonical.append(attrs.get("href"))
+            return
         if "id" in attrs:
             self.ids.add(attrs["id"])
         self.urls.extend(attrs[key] for key in ("href", "src") if key in attrs)
@@ -68,6 +72,7 @@ def verify(base, demo, output):
                         assert marker not in html, (relative, marker)
                 parsed = Links()
                 parsed.feed(html)
+                assert parsed.canonical == [builder.seo.absolute(builder.seo.public_site_url(), route)]
                 for link in parsed.urls:
                     if urlsplit(link).scheme == "tel":
                         assert link == contact["phone_href"], (relative, link)
@@ -141,4 +146,5 @@ if __name__ == "__main__":
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_catalog.py")], check=True)
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_gallery.py")], check=True)
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_client_journeys.py")], check=True)
+    subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_seo.py")], check=True)
     print("Все проверки пройдены.")

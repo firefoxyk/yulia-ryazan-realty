@@ -37,6 +37,8 @@ class ResourceLinks(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         values = dict(attrs)
+        if tag == "link" and values.get("rel") == "canonical":
+            return  # Metadata is checked by check_seo, not fetched from the public site.
         self.urls.extend(values[key] for key in ("src", "href") if key in values)
 
 

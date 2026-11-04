@@ -297,7 +297,10 @@ main { min-height: 55vh; outline: none; }
 .client-grid .service-item { padding: 1.5rem; border: 1px solid var(--line); background: var(--white); min-width: 0; }
 .client-grid .service-item .eyebrow { margin-top: 0; }
 .client-actions { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
-.contact-grid-single { grid-template-columns: 1fr; max-width: 42rem; }
+.contact-grid-single { grid-template-columns: 1fr; }
+.contact-call { margin-top: 1.4rem; }
+.contact-grid-single .phone-tile { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2rem; }
+.contact-grid-single .contact-call { margin-top: 0; }
 .process-section, .faq-section { padding-block: 3rem; border-top: 1px solid var(--line); }
 .process-section > .eyebrow { margin-bottom: .75rem; }
 .process-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; padding-left: 1.4rem; margin-top: 2rem; }
@@ -314,6 +317,7 @@ main { min-height: 55vh; outline: none; }
 .faq-section > .text-link { margin-top: 1.5rem; }
 @media (max-width: 620px) {
   .client-grid, .process-grid { grid-template-columns: 1fr; }
+  .contact-grid-single .phone-tile { grid-template-columns: 1fr; gap: 1.5rem; }
   .client-actions { flex-direction: column; align-items: flex-start; gap: 0; }
   .process-section, .faq-section { padding-block: 2.5rem; }
 }

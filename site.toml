@@ -1,4 +1,6 @@
 # Корень домена: "/". GitHub Pages: "/yulia-ryazan-realty/".
 base_path = "/"
+# Публичный адрес с подпапкой; не зависит от адреса локального просмотра.
+public_url = "https://firefoxyk.github.io/yulia-ryazan-realty/"
 # Отключить перед запуском: демонстрационная страница и ссылка исчезнут.
 include_demo = true

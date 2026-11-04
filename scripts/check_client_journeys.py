@@ -40,7 +40,7 @@ class ClientJourneyTests(unittest.TestCase):
                 record["featured"] = featured
                 html = self.home(base, records=[record])
                 hero = html.split('<section class="hero', 1)[1].split('</section>', 1)[0]
-                self.assertIn('>Недвижимость в Рязани</h1>', hero)
+                self.assertIn('>Недвижимость в Рязани — для жизни и ваших планов</h1>', hero)
                 self.assertIn('Посмотрите актуальные предложения или расскажите Юлии', hero)
                 self.assertIn(f'class="button button-primary" href="{base}catalog/"', hero)
                 self.assertNotIn('квартир', hero.lower())
@@ -74,6 +74,9 @@ class ClientJourneyTests(unittest.TestCase):
         contacts = (self.output / "contacts/index.html").read_text(encoding="utf-8")
         self.assertIn('contact-grid-single', contacts)
         self.assertIn('tel:+79657127848', contacts)
+        self.assertEqual(contacts.count('class="contact-tile phone-tile"'), 1)
+        self.assertIn('class="contact-identity"', contacts)
+        self.assertIn('class="contact-call"', contacts)
         for marker in ('Переписка', 'Telegram', 'WhatsApp', 'MAX', 'уточнить при звонке'):
             self.assertNotIn(marker, contacts)
 
@@ -91,12 +94,14 @@ class ClientJourneyTests(unittest.TestCase):
         with patch.object(builder.tomllib, 'loads', return_value=dict(raw, max_url=synthetic)):
             contact = builder.contacts()
         self.assertEqual(contact['max_url'], synthetic)
-        with patch.object(builder, 'contacts', return_value=contact):
-            builder.build('/', True, self.output, test_data=True)
-        for relative in ('contacts/index.html', 'objects/test-apartment/index.html'):
-            html = (self.output / relative).read_text(encoding='utf-8')
-            self.assertIn('https://max.ru/u/synthetic-test?one=1&amp;two=2', html)
-            self.assertIn('Написать в MAX', html)
+        for base in ('/', '/yulia-ryazan-realty/'):
+            with patch.object(builder, 'contacts', return_value=contact):
+                builder.build(base, True, self.output, test_data=True)
+            for relative in ('index.html', 'contacts/index.html', 'objects/test-apartment/index.html'):
+                html = (self.output / relative).read_text(encoding='utf-8')
+                self.assertIn('https://max.ru/u/synthetic-test?one=1&amp;two=2', html)
+                self.assertIn('Написать в MAX', html)
+                self.assertIn('tel:+79657127848', html)
         self.assertIs(builder.tomllib.loads, original_loads)
 
 

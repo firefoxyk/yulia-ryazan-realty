@@ -2,6 +2,7 @@
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit, unquote
+from xml.etree import ElementTree as ET
 
 import importlib.util
 
@@ -11,7 +12,7 @@ spec.loader.exec_module(builder)
 
 BASE = "/yulia-ryazan-realty/"
 PAGES = {"index.html", "catalog/index.html", "about/index.html", "contacts/index.html"}
-FILES = PAGES | {"assets/styles.css", "images/yulia-laryushkina.jpg", ".nojekyll"}
+FILES = PAGES | {"assets/styles.css", "images/yulia-laryushkina.jpg", ".nojekyll", "sitemap.xml"}
 
 
 class Document(HTMLParser):
@@ -20,9 +21,16 @@ class Document(HTMLParser):
         self.urls = []
         self.ids = set()
         self.noindex = False
+        self.canonical = []
+        self.metadata = {}
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == "link" and attrs.get("rel") == "canonical":
+            self.canonical.append(attrs.get("href"))
+            return
+        if tag == "meta":
+            self.metadata[attrs.get("property", attrs.get("name"))] = attrs.get("content")
         if "id" in attrs:
             self.ids.add(attrs["id"])
         self.urls.extend(attrs[key] for key in ("href", "src") if key in attrs)
@@ -42,6 +50,10 @@ def audit(output=builder.DIST):
         page = Document()
         page.feed(html)
         assert page.noindex, (relative, "Missing noindex, nofollow")
+        expected_url = builder.seo.absolute(builder.seo.public_site_url(), relative.removesuffix("index.html"))
+        assert page.canonical == [expected_url], (relative, page.canonical)
+        assert page.metadata["og:url"] == expected_url
+        assert page.metadata["og:image"] == builder.seo.absolute(builder.seo.public_site_url(), "images/yulia-laryushkina.jpg")
         parsed[relative] = page
     for relative, page in parsed.items():
         assert builder.contacts()["phone_href"] in page.urls
@@ -67,7 +79,10 @@ def audit(output=builder.DIST):
     assert 'id="properties-title"' not in (output / "index.html").read_text(encoding="utf-8")
     assert "Пока здесь нет опубликованных объектов." in (output / "catalog/index.html").read_text(encoding="utf-8")
     assert (output / "images/yulia-laryushkina.jpg").read_bytes() == (builder.ROOT / "public/images/yulia-laryushkina.jpg").read_bytes()
-    print("OK: preliminary artifact; exactly 4 HTML pages, CSS, Julia photo, .nojekyll; no demo/test/private files or editorial notices; links, phone, noindex/nofollow verified")
+    sitemap = ET.parse(output / "sitemap.xml")
+    locations = sitemap.findall("{http://www.sitemaps.org/schemas/sitemap/0.9}url/{http://www.sitemaps.org/schemas/sitemap/0.9}loc")
+    assert len(locations) == 4 and {entry.text for entry in locations} == {builder.seo.absolute(builder.seo.public_site_url(), route) for route in builder.seo.MAIN}
+    print("OK: preliminary artifact; exactly 4 HTML pages, CSS, Julia photo, sitemap.xml, .nojekyll; no demo/test/private files or editorial notices; links, phone, canonical, OG, sitemap, noindex/nofollow verified")
 
 
 if __name__ == "__main__":

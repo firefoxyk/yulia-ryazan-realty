@@ -4,6 +4,7 @@ import shutil
 from tempfile import TemporaryDirectory
 from threading import Thread
 import time
+from unittest.mock import patch
 
 from browser_support import open_browser, ROOT, SHOTS
 from check_properties import builder
@@ -33,9 +34,13 @@ def check(base, output, browser):
         try:
             browser.call('Network.enable')
             browser.call('Network.setCacheDisabled', cacheDisabled=True)
-            for filled in (False, True):
-                mode = 'filled' if filled else 'empty'
-                builder.build(base, filled, output, test_data=filled, preliminary=not filled)
+            for mode, filled, featured in (('empty', False, False), ('filled', True, True), ('unfeatured', True, False)):
+                records = builder.load_catalog(test_data=filled)
+                if filled and not featured:
+                    for record in records:
+                        record['featured'] = False
+                with patch.object(builder, 'load_catalog', return_value=records):
+                    builder.build(base, filled, output, test_data=filled, preliminary=not filled)
                 routes = [('home',''),('catalog','catalog/'),('about','about/'),('contacts','contacts/')]
                 if filled: routes.append(('object','objects/test-apartment/'))
                 for width in (1280,390,360):
@@ -59,9 +64,11 @@ def check(base, output, browser):
                         if name=='home':
                             assert js("document.querySelectorAll('.client-grid article').length===2")
                             if filled:
-                                assert js("document.querySelector('.hero .button-primary').getAttribute('href').endsWith('/catalog/') && !!document.querySelector('#properties-title')")
+                                assert js("document.querySelector('.hero .button-primary').getAttribute('href').endsWith('/catalog/')")
+                                assert js("!!document.querySelector('#properties-title')")==featured
+                                assert js("document.querySelector('.hero h1').textContent==='Недвижимость в Рязани — для жизни и ваших планов'")
                                 assert js("document.querySelector('.hero-description').textContent.includes('тестовые примеры')")
-                                assert js("document.querySelector('#properties-title').textContent==='Актуальные предложения'")
+                                if featured: assert js("document.querySelector('#properties-title').textContent==='Актуальные предложения'")
                             else:
                                 assert js("document.querySelector('.hero h1').textContent==='Ищете недвижимость в Рязани или планируете продажу?'")
                                 assert js("document.querySelector('.hero .button-primary').getAttribute('href').endsWith('/contacts/') && !document.querySelector('#properties-title')")
@@ -69,8 +76,13 @@ def check(base, output, browser):
                             assert js("document.querySelectorAll('.process-grid li').length===3 && document.querySelectorAll('.faq-section details').length===3")
                         if name=='contacts':
                             assert js("document.querySelectorAll('.contact-grid .contact-tile').length===1 && !document.body.innerText.includes('WhatsApp') && !document.body.innerText.includes('Telegram')")
+                            assert js("document.querySelector('.phone-tile').getBoundingClientRect().width >= document.querySelector('.contact-grid').getBoundingClientRect().width-2")
+                            if width==1280:
+                                assert js("document.querySelector('.contact-call').getBoundingClientRect().left > document.querySelector('.contact-identity').getBoundingClientRect().right")
+                            else:
+                                assert js("document.querySelector('.contact-call').getBoundingClientRect().top > document.querySelector('.contact-identity').getBoundingClientRect().bottom")
                         if width!=360:
-                            browser.screenshot(f'clients-{label}-{mode}-{name}-{width}.png')
+                            browser.screenshot(f'clarity-{label}-{mode}-{name}-{width}.png')
                 # Actual keyboard navigation to the main action; never activate a telephone link.
                 browser.navigate(prefix)
                 for _ in range(40):
@@ -92,7 +104,7 @@ def check(base, output, browser):
                 assert js("parseFloat(getComputedStyle(document.activeElement).outlineWidth)>=2")
                 key('Enter')
                 wait("document.querySelector('.faq-section details').open")
-                browser.screenshot(f'clients-{label}-{mode}-faq-open.png')
+                browser.screenshot(f'clarity-{label}-{mode}-faq-open.png')
                 if not filled:
                     browser.navigate(prefix+'catalog/')
                     js("document.querySelector('.empty-state .text-link').click()")
@@ -113,6 +125,20 @@ def check(base, output, browser):
                 finally:
                     browser.call('Emulation.setScriptExecutionDisabled',value=False)
                 print('PASS client paths:',base,mode,'360/390/1280; hero, cards, contacts, FAQ, keyboard and no-JS',flush=True)
+            # Rendering only: never navigate to or activate the synthetic MAX URL.
+            contact = dict(builder.contacts(), max_url='https://max.ru/u/synthetic-test?one=1&two=2')
+            with patch.object(builder, 'contacts', return_value=contact):
+                builder.build(base, True, output, test_data=True)
+            for width in (1280,390,360):
+                browser.call('Emulation.setDeviceMetricsOverride', width=width, height=900 if width==1280 else 844, deviceScaleFactor=1, mobile=width<600)
+                for route in ('','contacts/','objects/test-apartment/'):
+                    browser.navigate(prefix+route)
+                    assert js("document.querySelector('a[href=\"https://max.ru/u/synthetic-test?one=1&two=2\"]')!==null && document.documentElement.scrollWidth<=innerWidth")
+                    assert js("[...document.querySelectorAll('a[href^=\"tel:\"]')].every(a=>a.getAttribute('href')==='tel:+79657127848')")
+                browser.navigate(prefix+'contacts/')
+                assert js("document.querySelectorAll('.contact-grid .contact-tile').length===2")
+                if width!=360: browser.screenshot(f'clarity-{label}-synthetic-max-contacts-{width}.png')
+            print('PASS optional MAX rendering:',base,'home, contacts, object; 360/390/1280; no messenger activation',flush=True)
         finally:
             server.shutdown();thread.join()
 
