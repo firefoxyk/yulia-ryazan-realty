@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" fill="none">
+  <rect width="800" height="520" fill="#e0eae7"/>
+  <path d="M0 400H800V520H0Z" fill="#cbdad5"/>
+  <path d="M44 400V60H756V400M44 60L0 22M756 60L800 22M44 400L0 442M756 400L800 442" stroke="#b3c9c3" stroke-width="2"/>
+  <path d="M454 400V108H693V400" fill="#f3f5ef"/>
+  <path d="M454 400V108H693V400M574 108V400M454 252H693" stroke="#9eb9b2" stroke-width="3"/>
+  <path d="M475 400V130H551V400M595 400V130H672V400" stroke="#dce7df" stroke-width="2"/>
+  <path d="M118 387V297Q118 275 140 275H339Q361 275 361 297V387" fill="#b9cdc5"/>
+  <rect x="101" y="324" width="278" height="72" rx="12" fill="#9fbcb0"/>
+  <path d="M130 396V415M350 396V415M240 326V395" stroke="#75998b" stroke-width="3"/>
+  <path d="M165 276V251H230V276" stroke="#98b4a9" stroke-width="3"/>
+  <ellipse cx="417" cy="403" rx="54" ry="13" fill="#b1c7bc"/>
+  <path d="M383 400V418M450 400V418M417 169V358M389 169H445L464 227H371Z" stroke="#829f95" stroke-width="3"/>
+  <path d="M71 400V268M71 318Q32 298 43 273Q76 274 71 318M72 344Q108 304 114 332Q111 359 72 368" stroke="#8aaa9b" stroke-width="4"/>
+  <path d="M52 400L46 371H95L89 400" fill="#a8c1b5"/>
+  <path d="M172 107H303V218H172Z" fill="#d1dfd5" stroke="#b0c5b8" stroke-width="2"/>
+  <path d="M191 198L223 154L249 181L271 143L288 198" stroke="#a7bfae" stroke-width="2"/>
+</svg>

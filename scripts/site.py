@@ -8,15 +8,16 @@ import re
 import shutil
 from string import Template
 import tomllib
+import time
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
 PAGES = (
-    ("", "Главная", "Персональный сайт брокера Юлии Ларюшкиной в Рязани."),
+    ("", "Главная", "Юлия Ларюшкина — агент по недвижимости в Рязани. Покупка и продажа квартир."),
     ("catalog/", "Каталог", "Каталог недвижимости. Объявления готовятся к публикации."),
-    ("about/", "Обо мне", "Информация о Юлии Ларюшкиной готовится к публикации."),
-    ("contacts/", "Контакты", "Контакты Юлии Ларюшкиной будут добавлены позже."),
+    ("about/", "Обо мне", "Юлия Ларюшкина: покупка и продажа квартир, новостройки и вторичный рынок в Рязани."),
+    ("contacts/", "Контакты", "Связаться с Юлией Ларюшкиной по вопросам недвижимости в Рязани."),
 )
 
 
@@ -32,29 +33,80 @@ def settings(base=None, no_demo=False):
     return normalize_base(base if base is not None else config["base_path"]), config["include_demo"] and not no_demo
 
 
+def contacts():
+    data = tomllib.loads((ROOT / "src/data/contacts.toml").read_text(encoding="utf-8"))
+    number = data["phone_number"]
+    if not re.fullmatch(r"\+[1-9]\d{6,14}", number) or re.sub(r"\D", "", data["phone_display"]) != number[1:]:
+        raise ValueError("Некорректный номер телефона в src/data/contacts.toml")
+    return dict(phone_href=f"tel:{number}", phone_display=escape(data["phone_display"]), full_name=escape(data["full_name"]))
+
+
+def retry_windows_lock(operation, path, error):
+    """A short Windows sharing lock must not break a rapid rebuild."""
+    if getattr(error, "winerror", None) not in (32, 33):
+        raise error
+    for delay in (0.1, 0.2, 0.4, 0.8, 1.6):
+        time.sleep(delay)
+        try:
+            operation(path)
+            return
+        except OSError as retry_error:
+            if getattr(retry_error, "winerror", None) not in (32, 33):
+                raise
+            error = retry_error
+    raise error
+
+
 def build(base, include_demo, output=DIST):
+    contact_values = contacts()
     output = output.resolve()
     # Only generated directories explicitly owned by this project may be replaced.
     if output != DIST and not (output.parent.parent == ROOT and output.parent.name.startswith(".check-")):
         raise ValueError("Недопустимая папка сборки")
     if output.exists():
-        shutil.rmtree(output)
+        shutil.rmtree(output, onexc=retry_windows_lock)
     output.mkdir(parents=True)
     shutil.copytree(ROOT / "public", output, dirs_exist_ok=True, ignore=shutil.ignore_patterns(".gitkeep"))
     layout = Template((ROOT / "src/templates/layout.html").read_text(encoding="utf-8"))
     pages = [(route, title, description, ROOT / "src/pages" / route / "index.html") for route, title, description in PAGES]
     if include_demo:
         pages.append(("objects/demo/", "Демонстрационная страница объекта", "Технический пример. Не является объявлением.", ROOT / "src/demo/routing-example.html"))
+    def render(path, **values):
+        return Template((ROOT / path).read_text(encoding="utf-8")).substitute(base=base, **values)
+
+    demo_cards = render("src/demo/card.html") if include_demo else ""
+    demo_section = render("src/demo/collection.html", demo_cards=demo_cards) if include_demo else ""
+    portrait_note = '<span class="portrait-note" data-demo="portrait-note">Место для фотографии Юлии</span>' if include_demo else ""
+    photo_available = (ROOT / "public/images/yulia-laryushkina.jpg").is_file()
+    portrait_content = (
+        f'<img src="{base}images/yulia-laryushkina.jpg" alt="Юлия Ларюшкина, агент по недвижимости в Рязани" width="900" height="1125" fetchpriority="high" decoding="async">'
+        if photo_available else render("src/templates/portrait-placeholder.html", portrait_note=portrait_note)
+    )
+    portrait = render("src/templates/portrait.html", portrait_class="portrait-photo" if photo_available else "portrait-art", portrait_content=portrait_content)
+    if include_demo:
+        shutil.copyfile(ROOT / "src/demo/property-placeholder.svg", output / "assets/demo-property.svg")
+    values = dict(
+        portrait=portrait,
+        demo_cards=demo_cards,
+        demo_section=demo_section,
+        catalog_intro='<p class="lead" data-demo="catalog-intro">Пример карточки для обсуждения дизайна. Не является объявлением.</p>' if include_demo else "",
+        catalog_empty="" if include_demo else f'<div class="empty-state"><h2>В каталоге пока нет объектов</h2><p>Актуальные предложения появятся здесь.</p><a class="text-link" href="{base}contacts/">Перейти к контактам ↗</a></div>',
+        about_preview='<p class="preview-note" data-demo="about-note">Материал для согласования: формулировки о сотрудничестве с агентством, участии специалистов и проверке документов нужно подтвердить перед публикацией.</p>' if include_demo else "",
+        **contact_values,
+    )
     for route, title, description, source in pages:
         navigation = "\n".join(
-            f'<a href="{base}{path}"' + (' aria-current="page"' if path == route else '') + f'>{label}</a>'
+            f'<a href="{base}{path}"' + (' aria-current="page"' if path == route else '') + f'>{"Объекты" if path == "catalog/" else label}</a>'
             for path, label, _ in PAGES
         )
-        demo_link = f'<p><a href="{base}objects/demo/">Демонстрационная страница объекта (не объявление)</a></p>' if include_demo else ""
-        content = Template(source.read_text(encoding="utf-8")).substitute(base=base, demo_link=demo_link)
+        content = Template(source.read_text(encoding="utf-8")).substitute(base=base, **values)
         target = output / route / "index.html"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(layout.substitute(title=escape(title), description=escape(description, quote=True), base=base, navigation=navigation, content=content), encoding="utf-8")
+        target.write_text(layout.substitute(
+            title=escape(title), description=escape(description, quote=True),
+            base=base, navigation=navigation, content=content, **contact_values,
+            preview_banner='<div class="preview-banner" data-demo="banner">Материалы для согласования · демонстрационные объекты</div>' if include_demo else "",
+        ), encoding="utf-8")
     # GitHub Pages must serve assets without Jekyll processing.
     (output / ".nojekyll").touch()
     print(f"Собрано {len(pages)} страниц; base_path={base}; папка: {output}")

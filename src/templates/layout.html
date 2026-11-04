@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f8f5">
     <title>${title} — Юлия Ларюшкина</title>
     <meta name="description" content="${description}">
     <meta name="robots" content="noindex, nofollow">
@@ -10,18 +11,37 @@
   </head>
   <body>
     <a class="skip-link" href="#content">К содержимому</a>
+    ${preview_banner}
     <header class="site-header">
       <div class="container header-inner">
-        <a class="brand" href="${base}">Юлия Ларюшкина<span>Недвижимость · Рязань и область</span></a>
-        <nav aria-label="Основная навигация">${navigation}</nav>
+        <a class="brand" href="${base}" aria-label="Юлия Ларюшкина — главная">
+          <span class="monogram" aria-hidden="true">ЮЛ</span>
+          <span>Юлия Ларюшкина<span class="brand-caption">Недвижимость в Рязани</span></span>
+        </a>
+        <nav class="main-nav" aria-label="Основная навигация">${navigation}</nav>
+        <div class="header-contact">
+          <a class="header-contact-link" href="${phone_href}">${phone_display}</a>
+          <a class="header-contact-note" href="${base}contacts/">Связаться с Юлией ↗</a>
+        </div>
       </div>
     </header>
-    <main id="content" class="container" tabindex="-1">
-      <p class="notice">Сайт готовится к запуску. Содержание разделов будет дополнено.</p>
-      ${content}
-    </main>
+    <main id="content" tabindex="-1">${content}</main>
     <footer class="site-footer">
-      <div class="container">Юлия Ларюшкина · Рязань и Рязанская область</div>
+      <div class="container footer-grid">
+        <div>
+          <a class="brand footer-brand" href="${base}">
+            <span class="monogram" aria-hidden="true">ЮЛ</span>
+            <span>Юлия Ларюшкина<span class="brand-caption">Агент по недвижимости в Рязани</span></span>
+          </a>
+          <p class="footer-geography">Рязань</p>
+        </div>
+        <nav class="footer-nav" aria-label="Навигация в подвале">${navigation}</nav>
+        <div class="footer-contact">
+          <a class="footer-contact-link" href="${phone_href}">${phone_display}</a>
+          <p><a class="footer-contact-details" href="${base}contacts/">Все способы связи ↗</a></p>
+        </div>
+      </div>
+      <div class="container footer-bottom"><span>Юлия Ларюшкина</span><span>Рязань</span></div>
     </footer>
   </body>
 </html>

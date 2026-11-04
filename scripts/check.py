@@ -5,7 +5,10 @@ from tempfile import TemporaryDirectory
 from threading import Thread
 from urllib.error import HTTPError
 from urllib.parse import urljoin, urlsplit
-from urllib.request import urlopen
+from urllib.request import ProxyHandler, build_opener
+
+# Local checks must not send loopback traffic to a system HTTP proxy.
+urlopen = build_opener(ProxyHandler({})).open
 
 # 'site' is also a Python standard module; load our builder unambiguously.
 import importlib.util
@@ -50,9 +53,19 @@ def verify(base, demo, output):
                 assert '<html lang="ru">' in html
                 assert 'name="viewport"' in html
                 assert "${" not in html
+                assert "област" not in html.lower(), (relative, "Unconfirmed service area")
+                contact = builder.contacts()
+                assert f'href="{contact["phone_href"]}"' in html
+                assert contact["phone_display"] in html
+                if not demo:
+                    for marker in ('data-demo=', 'objects/demo/', 'demo-property.svg', '8 400 000', 'после согласования', 'Место для фотографии'):
+                        assert marker not in html, (relative, marker)
                 parsed = Links()
                 parsed.feed(html)
                 for link in parsed.urls:
+                    if urlsplit(link).scheme == "tel":
+                        assert link == contact["phone_href"], (relative, link)
+                        continue
                     if link.startswith("#"):
                         assert link[1:] in parsed.ids
                         continue
@@ -60,6 +73,33 @@ def verify(base, demo, output):
                     assert path.startswith(base), (url, link)
                     with urlopen(urljoin(url, link)) as response:
                         assert response.status == 200
+            assert (output / "assets/demo-property.svg").exists() == demo
+            for relative in ("index.html", "about/index.html"):
+                page_html = (output / relative).read_text(encoding="utf-8")
+                photo_exists = (builder.ROOT / "public/images/yulia-laryushkina.jpg").is_file()
+                assert (f'src="{base}images/yulia-laryushkina.jpg"' in page_html) == photo_exists
+                if photo_exists:
+                    assert 'alt="Юлия Ларюшкина, агент по недвижимости в Рязани"' in page_html
+                    assert 'class="portrait-arch"' not in page_html
+                    assert (output / "images/yulia-laryushkina.jpg").read_bytes() == (builder.ROOT / "public/images/yulia-laryushkina.jpg").read_bytes()
+            home_html = (output / "index.html").read_text(encoding="utf-8")
+            expected_sections = ['id="hero-title"']
+            if demo:
+                expected_sections.append('id="properties-title"')
+                assert '<h2 id="properties-title">Актуальные объекты</h2>' in home_html
+            else:
+                assert 'id="properties-title"' not in home_html
+            expected_sections.extend(('id="services-title"', 'id="intro-title"', 'id="contact-title"'))
+            positions = [home_html.index(marker) for marker in expected_sections]
+            assert positions == sorted(positions), "Unexpected home section order"
+            for material in ("Покупка квартиры", "Продажа квартиры", "Сопровождение сделки", "Советскому району"):
+                assert material in home_html, (demo, material)
+            assert "Новоселье" in (output / "about/index.html").read_text(encoding="utf-8")
+            contact_html = (output / "contacts/index.html").read_text(encoding="utf-8")
+            assert "wa.me" not in contact_html and "t.me/" not in contact_html and "max.ru/" not in contact_html
+            if demo:
+                assert 'data-demo="property-card"' in (output / "index.html").read_text(encoding="utf-8")
+                assert 'data-demo="property-card"' in (output / "catalog/index.html").read_text(encoding="utf-8")
             missing = [base + "missing/"]
             if not demo:
                 missing.append(base + "objects/demo/")
@@ -86,4 +126,5 @@ if __name__ == "__main__":
         verify("/yulia-ryazan-realty/", True, output)
         # Rebuild the same output to ensure a disabled demo leaves no stale page.
         verify("/yulia-ryazan-realty/", False, output)
+        verify("/", False, output)
     print("Все проверки пройдены.")

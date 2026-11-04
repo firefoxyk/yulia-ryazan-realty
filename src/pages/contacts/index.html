@@ -1,3 +1,17 @@
-<h1>Контакты</h1>
-<p class="lead">Контактная информация готовится.</p>
-<p>После подтверждения контактов здесь появятся кнопки звонка и перехода в MAX.</p>
+<section class="container page-section" aria-labelledby="contacts-title">
+  <div class="page-heading"><p class="eyebrow">На связи</p><h1 id="contacts-title">Связаться со мной</h1><p class="lead">Обсудим ваш вопрос о покупке или продаже квартиры в Рязани.</p></div>
+  <div class="contact-grid">
+    <div class="contact-tile phone-tile">
+      <p class="eyebrow">Позвонить</p><h2 class="contact-person">Юлия Ларюшкина</h2>
+      <p class="contact-full-name">${full_name}</p>
+      <a class="contact-phone" href="${phone_href}">${phone_display}</a>
+      <a class="button button-primary" href="${phone_href}">Позвонить Юлии <span aria-hidden="true">↗</span></a>
+    </div>
+    <div class="contact-tile">
+      <p class="eyebrow">Переписка</p><h2 class="contact-person">Telegram и WhatsApp</h2>
+      <p>Юлия использует эти мессенджеры с тем же номером телефона.</p>
+      <p class="contact-channel-note">Удобный способ переписки можно уточнить при звонке.</p>
+    </div>
+  </div>
+  <a class="text-link contacts-catalog-link" href="${base}catalog/">Посмотреть объекты <span aria-hidden="true">↗</span></a>
+</section>
