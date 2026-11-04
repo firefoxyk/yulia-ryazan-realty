@@ -63,7 +63,7 @@ def verify(base, demo, output):
                 assert '<html lang="ru">' in html
                 assert 'name="viewport"' in html
                 assert "${" not in html
-                assert "област" not in html.lower(), (relative, "Unconfirmed service area")
+                assert "Рязань и Рязанская область" in html, (relative, "Confirmed service area missing")
                 contact = builder.contacts()
                 assert f'href="{contact["phone_href"]}"' in html
                 assert contact["phone_display"] in html

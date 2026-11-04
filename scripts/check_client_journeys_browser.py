@@ -66,14 +66,14 @@ def check(base, output, browser):
                             if filled:
                                 assert js("document.querySelector('.hero .button-primary').getAttribute('href').endsWith('/catalog/')")
                                 assert js("!!document.querySelector('#properties-title')")==featured
-                                assert js("document.querySelector('.hero h1').textContent==='Недвижимость в Рязани — для жизни и ваших планов'")
+                                assert js("document.querySelector('.hero h1').textContent==='Недвижимость в Рязани и области'")
                                 assert js("document.querySelector('.hero-description').textContent.includes('тестовые примеры')")
                                 if featured: assert js("document.querySelector('#properties-title').textContent==='Актуальные предложения'")
                             else:
-                                assert js("document.querySelector('.hero h1').textContent==='Ищете недвижимость в Рязани или планируете продажу?'")
+                                assert js("document.querySelector('.hero h1').textContent==='Покупаете или продаёте недвижимость?'")
                                 assert js("document.querySelector('.hero .button-primary').getAttribute('href').endsWith('/contacts/') && !document.querySelector('#properties-title')")
                         if name=='about':
-                            assert js("document.querySelectorAll('.process-grid li').length===3 && document.querySelectorAll('.faq-section details').length===3")
+                            assert js("document.querySelectorAll('.process-grid li').length===3 && document.querySelectorAll('.faq-section details').length===5")
                         if name=='contacts':
                             assert js("document.querySelectorAll('.contact-grid .contact-tile').length===1 && !document.body.innerText.includes('WhatsApp') && !document.body.innerText.includes('Telegram')")
                             assert js("document.querySelector('.phone-tile').getBoundingClientRect().width >= document.querySelector('.contact-grid').getBoundingClientRect().width-2")

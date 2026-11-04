@@ -22,10 +22,10 @@ from catalog_views import controls
 import seo
 DIST = ROOT / "dist"
 PAGES = (
-    ("", "Главная", "Юлия Ларюшкина — агент по недвижимости в Рязани. Покупка и продажа квартир."),
+    ("", "Главная", "Юлия Ларюшкина — недвижимость в Рязани и Рязанской области."),
     ("catalog/", "Каталог", "Каталог недвижимости. Объявления готовятся к публикации."),
-    ("about/", "Обо мне", "Юлия Ларюшкина: покупка и продажа квартир, новостройки и вторичный рынок в Рязани."),
-    ("contacts/", "Контакты", "Связаться с Юлией Ларюшкиной по вопросам недвижимости в Рязани."),
+    ("about/", "Обо мне", "Юлия Ларюшкина: покупка и продажа недвижимости в Рязани и Рязанской области."),
+    ("contacts/", "Контакты", "Связаться с Юлией Ларюшкиной по вопросам недвижимости в Рязани и Рязанской области."),
 )
 
 
@@ -110,17 +110,17 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
     featured_cards = "".join(card(record, base) for record in active if record["featured"])
     property_section = section(featured_cards, base=base, synthetic=all(record["_fixture"] for record in active if record["featured"])) if featured_cards else demo_section
     if any(not record["_fixture"] for record in active):
-        hero_title = "Недвижимость в Рязани — для жизни и ваших планов"
-        hero_lead = "Я Юлия Ларюшкина, агент по недвижимости в Рязани."
+        hero_title = "Недвижимость в Рязани и области"
+        hero_lead = "Я Юлия Ларюшкина."
         hero_description = "Посмотрите актуальные предложения или расскажите Юлии, какую недвижимость вы ищете."
     elif active:
-        hero_title = "Недвижимость в Рязани — для жизни и ваших планов"
-        hero_lead = "Я Юлия Ларюшкина, агент по недвижимости в Рязани."
+        hero_title = "Недвижимость в Рязани и области"
+        hero_lead = "Я Юлия Ларюшкина."
         hero_description = "В каталоге сейчас тестовые примеры, не реальные объявления. Расскажите мне, что вы ищете, — обсудим ваш запрос."
     else:
-        hero_title = "Ищете недвижимость в Рязани или планируете продажу?"
-        hero_lead = "Я Юлия Ларюшкина. Помогу разобраться в вашей задаче и определить, с чего начать."
-        hero_description = "Помогаю с покупкой и продажей квартир в Рязани. Актуальные объекты пока не опубликованы."
+        hero_title = "Покупаете или продаёте недвижимость?"
+        hero_lead = "Я Юлия Ларюшкина. Обсудим вашу задачу и условия работы."
+        hero_description = "Актуальные объекты пока не опубликованы. Позвоните мне, чтобы обсудить ваш запрос."
     catalog_action = f'<a class="button button-primary" href="{base}catalog/">Смотреть объекты <span aria-hidden="true">↗</span></a>'
     contact_action = f'<a class="button button-{"secondary" if active else "primary"}" href="{base}contacts/">Связаться с Юлией</a>'
     hero_actions = (catalog_action if active else "") + contact_action

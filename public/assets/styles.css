@@ -297,6 +297,8 @@ main { min-height: 55vh; outline: none; }
 .client-grid .service-item { padding: 1.5rem; border: 1px solid var(--line); background: var(--white); min-width: 0; }
 .client-grid .service-item .eyebrow { margin-top: 0; }
 .client-actions { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+.client-tasks { margin-top: 1rem; padding-left: 1.2rem; color: var(--muted); font-size: .85rem; }
+.client-tasks li + li { margin-top: .4rem; }
 .contact-grid-single { grid-template-columns: 1fr; }
 .contact-call { margin-top: 1.4rem; }
 .contact-grid-single .phone-tile { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2rem; }

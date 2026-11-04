@@ -23,8 +23,9 @@ class ClientJourneyTests(unittest.TestCase):
         for base in ("/", "/yulia-ryazan-realty/"):
             html = self.home(base)
             hero = html.split('<section class="hero', 1)[1].split('</section>', 1)[0]
-            self.assertIn("Ищете недвижимость в Рязани или планируете продажу?", hero)
-            self.assertIn("Помогу разобраться в вашей задаче", hero)
+            self.assertIn("Покупаете или продаёте недвижимость?", hero)
+            self.assertIn("Рязань и Рязанская область", hero)
+            self.assertIn("Позвоните мне, чтобы обсудить ваш запрос.", hero)
             self.assertIn(f'class="button button-primary" href="{base}contacts/"', hero)
             self.assertNotIn(f'href="{base}catalog/"', hero)
             self.assertNotIn('id="properties-title"', html)
@@ -40,7 +41,7 @@ class ClientJourneyTests(unittest.TestCase):
                 record["featured"] = featured
                 html = self.home(base, records=[record])
                 hero = html.split('<section class="hero', 1)[1].split('</section>', 1)[0]
-                self.assertIn('>Недвижимость в Рязани — для жизни и ваших планов</h1>', hero)
+                self.assertIn('>Недвижимость в Рязани и области</h1>', hero)
                 self.assertIn('Посмотрите актуальные предложения или расскажите Юлии', hero)
                 self.assertIn(f'class="button button-primary" href="{base}catalog/"', hero)
                 self.assertNotIn('квартир', hero.lower())
@@ -54,7 +55,7 @@ class ClientJourneyTests(unittest.TestCase):
     def test_inactive_and_test_only_records_do_not_claim_real_offers(self):
         inactive = [record for record in data.load_catalog(True) if record["status"] in ("sold", "withdrawn")]
         html = self.home(records=inactive)
-        self.assertIn('Ищете недвижимость в Рязани или планируете продажу?', html)
+        self.assertIn('Покупаете или продаёте недвижимость?', html)
         self.assertNotIn('id="properties-title"', html)
         html = self.home(test_data=True)
         self.assertIn('В каталоге сейчас тестовые примеры', html)
@@ -66,7 +67,12 @@ class ClientJourneyTests(unittest.TestCase):
         about = (self.output / "about/index.html").read_text(encoding="utf-8")
         self.assertIn('Как проходит работа', about)
         self.assertIn('Частые вопросы', about)
-        self.assertEqual(about.count('<details>'), 3)
+        self.assertEqual(about.count('<details>'), 5)
+        for material in ('коммерческой недвижимостью', 'покупкой для инвестиций', 'до вручения ключей', 'на другом сайте', 'затем купить другую', 'Рязанской области'):
+            self.assertIn(material, about)
+        home = (self.output / 'index.html').read_text(encoding='utf-8')
+        for material in ('от первого обращения до вручения ключей', 'Оценка объекта и сбор документов', 'Показы и переговоры', 'Работа с договором'):
+            self.assertIn(material, home)
         self.assertIn('Новоселье', about)
         self.assertIn('Советскому району', about)
         for marker in ('бесплатн', 'гаранти', 'юридическ', 'согласовать текст'):
