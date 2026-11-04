@@ -1,0 +1,13 @@
+# Синтетический пример дома без цены; участок указан в м².
+id = "test-house-no-price"
+slug = "test-house-no-price"
+status = "active"
+ever_published = true
+published_at = 2026-11-03
+type = "house"
+title = "Тестовый дом без цены — не объявление"
+city = "Другой тестовый город"
+description = "Синтетический пример без рынка, комнат и фотографий."
+area_m2 = 80
+plot_area = 500
+plot_unit = "m2"

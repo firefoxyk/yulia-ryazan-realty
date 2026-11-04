@@ -1,0 +1,13 @@
+# Синтетический пример участка с ценой, площадь в сотках.
+id = "test-land-priced"
+slug = "test-land-priced"
+status = "active"
+ever_published = true
+type = "land"
+title = "Тестовый участок с ценой — не объявление"
+price = 1000000
+city = "Тестовый город"
+district = "Условный северный район"
+description = "Синтетический пример участка. Не предложение о продаже."
+plot_area = 10
+plot_unit = "sotka"

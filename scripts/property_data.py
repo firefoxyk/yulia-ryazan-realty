@@ -1,5 +1,6 @@
 """Public property records: TOML validation and selective media access."""
 from datetime import date
+from decimal import Decimal
 from math import isfinite
 from pathlib import Path, PurePosixPath
 import re
@@ -14,6 +15,13 @@ FIXTURES = ROOT / "tests/fixtures"
 TYPES = {"apartment": "Квартира", "house": "Дом", "land": "Земельный участок"}
 MARKETS = {"primary": "Первичный рынок", "secondary": "Вторичный рынок"}
 STATUSES = {"draft", "active", "sold", "withdrawn"}
+
+
+def plot_sotkas(record):
+    """Convert validated plot data for display/search without changing its source."""
+    factor = {"m2": Decimal("0.01"), "sotka": Decimal(1), "ha": Decimal(100)}[record["plot_unit"]]
+    return Decimal(str(record["plot_area"])) * factor
+
 AREA_FIELDS = {"area_m2", "plot_area", "rooms", "floor", "floors"}
 APPLICABLE = {
     "apartment": {"area_m2", "rooms", "floor", "floors"},

@@ -1,0 +1,14 @@
+# Синтетический пример: равная цена, студия, неполные характеристики.
+id = "test-apartment-studio"
+slug = "test-apartment-studio"
+status = "active"
+ever_published = true
+published_at = 2026-11-04
+type = "apartment"
+market = "secondary"
+title = "Тестовая студия с длинным названием для проверки переноса текста — не объявление"
+price = 4200000
+city = "Другой тестовый город"
+district = "Условный южный район"
+description = "Синтетический пример без площади и фотографий. Не предложение о продаже."
+rooms = 0

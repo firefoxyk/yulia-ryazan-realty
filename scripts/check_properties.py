@@ -306,7 +306,7 @@ class PropertyTests(unittest.TestCase):
                         server.shutdown()
                         thread.join()
 
-    def test_preliminary_forces_synthetic_content_off_and_keeps_approval(self):
+    def test_preliminary_forces_synthetic_content_off_without_editorial_notices(self):
         from check_release import audit
         # Even conflicting development flags cannot enable fixtures in this mode.
         builder.build("/yulia-ryazan-realty/", True, self.output, test_data=True, preliminary=True)
@@ -335,6 +335,41 @@ class PropertyTests(unittest.TestCase):
                 self.assertIn("Посмотрите актуальные предложения в Рязани", home)
                 self.assertNotIn("Актуальные объекты пока не опубликованы", home)
                 self.assertNotIn('id="properties-title"', home)
+
+    def assert_no_editorial_notices(self):
+        for path in self.output.rglob("*.html"):
+            html = path.read_text(encoding="utf-8")
+            for marker in ("Предварительная версия", "для согласования", "подтвердить с Юлией", "перед полноценным запуском", "для обсуждения дизайна", 'data-review=', '${about_preview}', 'Место для фотографии'):
+                self.assertNotIn(marker, html, (path, marker))
+            self.assertIn('content="noindex, nofollow"', html)
+
+    def test_no_editorial_notices_in_public_demo_and_test_modes(self):
+        for base in ("/", "/yulia-ryazan-realty/"):
+            for demo, test_data, preliminary in ((True, False, False), (True, True, False), (False, False, False), (True, True, True)):
+                with self.subTest(base=base, demo=demo, test_data=test_data, preliminary=preliminary):
+                    builder.build(base, demo, self.output, test_data=test_data, preliminary=preliminary)
+                    self.assert_no_editorial_notices()
+                    home = (self.output / "index.html").read_text(encoding="utf-8")
+                    if demo and not preliminary:
+                        self.assertIn('data-demo="banner"', home)
+                        self.assertIn("объекты не являются объявлениями", home)
+                        self.assertIn('data-demo="property-card"' if not test_data else 'data-demo="fixture"', home)
+                    else:
+                        self.assertNotIn('class="preview-banner"', home)
+                        self.assertIn("Пока здесь нет опубликованных объектов.", (self.output / "catalog/index.html").read_text(encoding="utf-8"))
+
+    def test_public_active_and_inactive_pages_keep_visitor_messages(self):
+        records = [record for record in data.load_catalog(True) if record["status"] != "draft"]
+        for record in records:
+            record["_fixture"] = False
+        with patch.object(builder, "load_catalog", return_value=records):
+            builder.build("/", False, self.output)
+        self.assert_no_editorial_notices()
+        for path in self.output.rglob("*.html"):
+            self.assertNotIn('data-demo=', path.read_text(encoding="utf-8"))
+        self.assertIn("Объект продан", (self.output / "objects/test-sold/index.html").read_text(encoding="utf-8"))
+        self.assertIn("Объявление снято с публикации", (self.output / "objects/test-withdrawn/index.html").read_text(encoding="utf-8"))
+        self.assertIn("Это предложение больше недоступно.", (self.output / "objects/test-sold/index.html").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

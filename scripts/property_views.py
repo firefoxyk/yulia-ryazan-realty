@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 from string import Template
 
-from property_data import TYPES, MARKETS
+from property_data import TYPES, MARKETS, plot_sotkas
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -45,7 +45,7 @@ def price(record):
     return f'{record["price"]:,}'.replace(",", " ") + " ₽" if "price" in record else "Цена по запросу"
 
 
-def facts(record):
+def facts(record, *, plot_in_sotkas=False):
     labels = {"area_m2": "Площадь", "plot_area": "Участок", "rooms": "Комнаты", "floor": "Этаж", "floors": "Этажность"}
     units = {"m2": "м²", "sotka": "сот.", "ha": "га"}
     result = []
@@ -55,7 +55,13 @@ def facts(record):
             if field == "area_m2":
                 value += " м²"
             elif field == "plot_area":
-                value += " " + units[record["plot_unit"]]
+                if plot_in_sotkas:
+                    value = format(plot_sotkas(record), "f")
+                    if "." in value:
+                        value = value.rstrip("0").rstrip(".")
+                    value = value.replace(".", ",") + " сот."
+                else:
+                    value += " " + units[record["plot_unit"]]
             elif field == "rooms" and record[field] == 0:
                 value = "Студия"
             result.append((label, value))
@@ -63,8 +69,8 @@ def facts(record):
     return result
 
 
-def facts_html(record, limit=None):
-    pairs = facts(record)
+def facts_html(record, limit=None, *, plot_in_sotkas=False):
+    pairs = facts(record, plot_in_sotkas=plot_in_sotkas)
     if limit is not None:
         pairs = pairs[:limit]
     if not pairs:
@@ -84,11 +90,11 @@ def photo_html(record, base):
     return f'<img src="{media_address(record, photo["path"], base)}" alt="{escape(photo["alt"], quote=True)}" decoding="async">'
 
 
-def card(record, base):
-    return render("property-card.html", note=test_note(record),
+def card(record, base, *, plot_in_sotkas=False):
+    return render("property-card.html", property_id=record["id"], note=test_note(record),
                   media=photo_html(record, base), price=escape(price(record)),
                   title=escape(record["title"]), location=escape(location(record)),
-                  facts=facts_html(record, 3), url=address(record, base))
+                  facts=facts_html(record, 3, plot_in_sotkas=plot_in_sotkas), url=address(record, base))
 
 
 def section(cards, note="", *, base="/", synthetic=False):

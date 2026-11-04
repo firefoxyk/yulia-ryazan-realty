@@ -20,8 +20,6 @@ class Document(HTMLParser):
         self.urls = []
         self.ids = set()
         self.noindex = False
-        self.banner = False
-        self.about_note = False
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -29,9 +27,7 @@ class Document(HTMLParser):
             self.ids.add(attrs["id"])
         self.urls.extend(attrs[key] for key in ("href", "src") if key in attrs)
         if tag == "meta" and attrs.get("name") == "robots":
-            self.noindex = "noindex" in attrs.get("content", "").split(", ")
-        self.banner |= attrs.get("data-review") == "banner"
-        self.about_note |= attrs.get("data-review") == "about-note"
+            self.noindex = {value.strip() for value in attrs.get("content", "").split(",")} == {"noindex", "nofollow"}
 
 
 def audit(output=builder.DIST):
@@ -41,11 +37,11 @@ def audit(output=builder.DIST):
     parsed = {}
     for relative in PAGES:
         html = (output / relative).read_text(encoding="utf-8")
-        for marker in ('data-demo=', 'objects/', 'property-media/', 'test-apartment', '${'):
+        for marker in ('data-demo=', 'data-review=', 'objects/', 'property-media/', 'test-apartment', '${', 'Предварительная версия', 'для согласования', 'подтвердить с Юлией', 'перед полноценным запуском'):
             assert marker not in html, (relative, marker)
         page = Document()
         page.feed(html)
-        assert page.noindex and page.banner, (relative, "Missing noindex or approval notice")
+        assert page.noindex, (relative, "Missing noindex, nofollow")
         parsed[relative] = page
     for relative, page in parsed.items():
         assert builder.contacts()["phone_href"] in page.urls
@@ -66,11 +62,10 @@ def audit(output=builder.DIST):
             assert target in FILES, (relative, link)
             if parts.fragment:
                 assert target in parsed and unquote(parts.fragment) in parsed[target].ids, link
-    assert parsed["about/index.html"].about_note
     assert 'id="properties-title"' not in (output / "index.html").read_text(encoding="utf-8")
     assert "Пока здесь нет опубликованных объектов." in (output / "catalog/index.html").read_text(encoding="utf-8")
     assert (output / "images/yulia-laryushkina.jpg").read_bytes() == (builder.ROOT / "public/images/yulia-laryushkina.jpg").read_bytes()
-    print("OK: preliminary artifact; exactly 4 HTML pages, CSS, Julia photo, .nojekyll; no demo/test/private files; links, phone, noindex and approval notices verified")
+    print("OK: preliminary artifact; exactly 4 HTML pages, CSS, Julia photo, .nojekyll; no demo/test/private files or editorial notices; links, phone, noindex/nofollow verified")
 
 
 if __name__ == "__main__":
