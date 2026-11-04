@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Also support the existing importlib-based checks and browser utilities.
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
-from property_data import load_catalog
+from property_data import load_catalog, external_url
 from property_views import card, section, object_page, publish_media
 from catalog_views import controls
 DIST = ROOT / "dist"
@@ -45,7 +45,16 @@ def contacts():
     number = data["phone_number"]
     if not re.fullmatch(r"\+[1-9]\d{6,14}", number) or re.sub(r"\D", "", data["phone_display"]) != number[1:]:
         raise ValueError("Некорректный номер телефона в src/data/contacts.toml")
-    return dict(phone_href=f"tel:{number}", phone_display=escape(data["phone_display"]), full_name=escape(data["full_name"]))
+    max_url = data.get("max_url", "")
+    if not isinstance(max_url, str):
+        raise ValueError("max_url в src/data/contacts.toml должен быть строкой")
+    max_url = max_url.strip()
+    if max_url:
+        max_url = external_url(max_url, "src/data/contacts.toml", "max_url")
+        parsed = urlsplit(max_url)
+        if parsed.hostname != "max.ru" or parsed.port not in (None, 443) or not parsed.path.strip("/"):
+            raise ValueError("max_url: нужна проверенная HTTPS-ссылка на контакт max.ru, а не главная страница")
+    return dict(phone_href=f"tel:{number}", phone_display=escape(data["phone_display"]), full_name=escape(data["full_name"]), max_url=max_url)
 
 
 def retry_windows_lock(operation, path, error):
@@ -98,11 +107,20 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
     featured_cards = "".join(card(record, base) for record in active if record["featured"])
     property_section = section(featured_cards, base=base, synthetic=all(record["_fixture"] for record in active if record["featured"])) if featured_cards else demo_section
     if any(not record["_fixture"] for record in active):
-        hero_description = "Посмотрите актуальные предложения в Рязани. А если подходящего варианта пока нет — расскажите мне, что вы ищете."
+        hero_title = "Недвижимость в Рязани"
+        hero_lead = "Я Юлия Ларюшкина, агент по недвижимости в Рязани."
+        hero_description = "Посмотрите актуальные предложения или расскажите Юлии, какой объект вы ищете."
     elif active:
+        hero_title = "Недвижимость в Рязани"
+        hero_lead = "Я Юлия Ларюшкина, агент по недвижимости в Рязани."
         hero_description = "В каталоге сейчас тестовые примеры, не реальные объявления. Расскажите мне, что вы ищете, — обсудим ваш запрос."
     else:
-        hero_description = "Актуальные объекты пока не опубликованы. Расскажите мне, что вы ищете, — обсудим район, бюджет и важные для вас условия."
+        hero_title = "Ищете недвижимость в Рязани или планируете продажу?"
+        hero_lead = "Я Юлия Ларюшкина. Помогу разобраться в вашей задаче и определить, с чего начать."
+        hero_description = "Помогаю с покупкой и продажей квартир в Рязани. Актуальные объекты пока не опубликованы."
+    catalog_action = f'<a class="button button-primary" href="{base}catalog/">Смотреть объекты <span aria-hidden="true">↗</span></a>'
+    contact_action = f'<a class="button button-{"secondary" if active else "primary"}" href="{base}contacts/">Связаться с Юлией</a>'
+    hero_actions = (catalog_action if active else "") + contact_action
     photo_available = (ROOT / "public/images/yulia-laryushkina.jpg").is_file()
     portrait_content = (
         f'<img src="{base}images/yulia-laryushkina.jpg" alt="Юлия Ларюшкина, агент по недвижимости в Рязани" width="900" height="1125" fetchpriority="high" decoding="async">'
@@ -115,7 +133,7 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
     for record in records:
         if record["status"] == "draft" or not record["ever_published"]:
             continue
-        title, page_content = object_page(record, base, **{key: contact_values[key] for key in ("phone_href", "phone_display")})
+        title, page_content = object_page(record, base, **{key: contact_values[key] for key in ("phone_href", "phone_display", "max_url")})
         pages.append((f'objects/{record["slug"]}/', title, "Информация об объекте недвижимости.", page_content))
     values = dict(
         portrait=portrait,
@@ -124,6 +142,9 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
         property_cards=property_cards,
         property_section=property_section,
         hero_description=hero_description,
+        hero_title=hero_title, hero_lead=hero_lead, hero_actions=hero_actions,
+        contacts_layout="contact-grid" + ("" if contact_values["max_url"] else " contact-grid-single"),
+        messenger_contact=(f'<div class="contact-tile"><p class="eyebrow">Переписка</p><h2 class="contact-person">MAX</h2><p>Напишите Юлии о покупке или продаже недвижимости.</p><a class="button button-primary" href="{escape(contact_values["max_url"], quote=True)}" rel="noopener noreferrer">Написать в MAX</a></div>' if contact_values["max_url"] else ""),
         **controls(catalog_active, base),
         catalog_intro='<p class="lead" data-demo="catalog-intro">Тестовые примеры, не реальные объявления.</p>' if test_data and include_demo else ('<p class="lead" data-demo="catalog-intro">Демонстрационный объект. Не является объявлением о продаже.</p>' if legacy_demo else ""),
         catalog_empty="" if property_cards else f'<div class="empty-state"><h2>Пока здесь нет опубликованных объектов.</h2><p>Расскажите Юлии, какую недвижимость вы ищете, — она поможет разобраться с вашим запросом.</p><a class="text-link" href="{base}contacts/">Связаться с Юлией ↗</a></div>',

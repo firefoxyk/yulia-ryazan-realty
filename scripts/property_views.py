@@ -101,11 +101,11 @@ def card(record, base, *, plot_in_sotkas=False):
 def section(cards, note="", *, base="/", synthetic=False):
     if not cards:
         return ""
-    intro = "Посмотрите тестовые примеры оформления. Это не реальные предложения недвижимости." if synthetic else "Посмотрите предложения и откройте подробности, чтобы сравнить варианты с вашими планами."
+    intro = "Выберите тестовый пример для просмотра. Это не реальные предложения недвижимости." if synthetic else "Выберите объект, который хотите посмотреть подробнее."
     return render("property-section.html", cards=cards, note=note, base=base, intro=intro)
 
 
-def object_page(record, base, phone_href, phone_display):
+def object_page(record, base, phone_href, phone_display, max_url=""):
     if record["status"] in ("sold", "withdrawn"):
         message = "Объект продан" if record["status"] == "sold" else "Объявление снято с публикации"
         return message, render("property-unavailable.html", message=message, base=base, note=test_note(record))
@@ -125,4 +125,5 @@ def object_page(record, base, phone_href, phone_display):
         description="".join(f"<p>{escape(line)}</p>" for line in record["description"].splitlines() if line.strip()),
         materials=f'<h2>Дополнительные материалы</h2><ul>{materials}</ul>' if materials else "",
         published=published, phone_href=phone_href, phone_display=phone_display, permalink=address(record, base),
+        max_contact=f'<a class="text-link" href="{escape(max_url, quote=True)}" rel="noopener noreferrer">Написать в MAX ↗</a>' if max_url else "",
     )

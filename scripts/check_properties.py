@@ -326,14 +326,14 @@ class PropertyTests(unittest.TestCase):
                 home = (self.output / "index.html").read_text(encoding="utf-8")
                 self.assertIn("В каталоге сейчас тестовые примеры", home)
                 self.assertNotIn("Посмотрите актуальные предложения", home)
-                self.assertIn(f'href="{base}catalog/">Посмотреть все предложения', home)
+                self.assertIn(f'href="{base}catalog/">Посмотреть все объекты', home)
                 record = data.validate(fixture(), "public-example.toml", MEDIA, False)
                 # A public active record without a home feature still makes the catalog nonempty.
                 record["featured"] = False
                 with patch.object(builder, "load_catalog", return_value=[record]):
                     builder.build(base, False, self.output)
                 home = (self.output / "index.html").read_text(encoding="utf-8")
-                self.assertIn("Посмотрите актуальные предложения в Рязани", home)
+                self.assertIn("Посмотрите актуальные предложения или расскажите Юлии", home)
                 self.assertNotIn("Актуальные объекты пока не опубликованы", home)
                 self.assertNotIn('id="properties-title"', home)
 

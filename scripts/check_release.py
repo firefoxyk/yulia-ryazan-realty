@@ -46,6 +46,8 @@ def audit(output=builder.DIST):
     for relative, page in parsed.items():
         assert builder.contacts()["phone_href"] in page.urls
         for link in page.urls:
+            if builder.contacts()["max_url"] and link == builder.contacts()["max_url"]:
+                continue
             parts = urlsplit(link)
             if parts.scheme == "tel":
                 assert link == builder.contacts()["phone_href"], (relative, link)

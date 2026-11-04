@@ -293,6 +293,30 @@ main { min-height: 55vh; outline: none; }
 .property-card + .property-card { margin-top: 1.5rem; }
 .hero h1.hero-title { font-size: clamp(2.15rem, 4.4vw, 3.65rem); line-height: 1.12; }
 .service-item .text-link { margin-top: 1rem; }
+.client-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.client-grid .service-item { padding: 1.5rem; border: 1px solid var(--line); background: var(--white); min-width: 0; }
+.client-grid .service-item .eyebrow { margin-top: 0; }
+.client-actions { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+.contact-grid-single { grid-template-columns: 1fr; max-width: 42rem; }
+.process-section, .faq-section { padding-block: 3rem; border-top: 1px solid var(--line); }
+.process-section > .eyebrow { margin-bottom: .75rem; }
+.process-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; padding-left: 1.4rem; margin-top: 2rem; }
+.process-grid li { padding-left: .25rem; min-width: 0; }
+.process-grid li::marker { color: var(--accent); font-weight: 600; }
+.process-grid h3 { font-size: 1.5rem; }
+.process-grid p { font-size: .9rem; color: var(--muted); margin-top: .75rem; }
+.faq-section { max-width: 55rem; }
+.faq-section details { padding-block: 1rem; border-bottom: 1px solid var(--line); }
+.faq-section h2 { margin-bottom: 1rem; }
+.faq-section summary { min-height: 46px; cursor: pointer; padding-block: .5rem; color: var(--ink); }
+.faq-section summary:focus-visible { outline: 3px solid #a76520; outline-offset: 3px; }
+.faq-section details p { color: var(--muted); font-size: .95rem; margin-top: .75rem; }
+.faq-section > .text-link { margin-top: 1.5rem; }
+@media (max-width: 620px) {
+  .client-grid, .process-grid { grid-template-columns: 1fr; }
+  .client-actions { flex-direction: column; align-items: flex-start; gap: 0; }
+  .process-section, .faq-section { padding-block: 2.5rem; }
+}
 
 /* Catalog layout is scoped so home cards keep their approved appearance. */
 [hidden] { display: none !important; }

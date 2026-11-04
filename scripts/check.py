@@ -72,6 +72,8 @@ def verify(base, demo, output):
                     if urlsplit(link).scheme == "tel":
                         assert link == contact["phone_href"], (relative, link)
                         continue
+                    if contact["max_url"] and link == contact["max_url"]:
+                        continue  # Validate rendering only; never send messages or open a messenger.
                     if link.startswith("#"):
                         assert link[1:] in parsed.ids
                         continue
@@ -92,17 +94,18 @@ def verify(base, demo, output):
             expected_sections = ['id="hero-title"']
             if (demo and not active) or any(record["featured"] for record in active):
                 expected_sections.append('id="properties-title"')
-                assert '<h2 id="properties-title">Актуальные объекты</h2>' in home_html
+                assert '<h2 id="properties-title">Актуальные предложения</h2>' in home_html
             else:
                 assert 'id="properties-title"' not in home_html
             expected_sections.extend(('id="services-title"', 'id="intro-title"', 'id="contact-title"'))
             positions = [home_html.index(marker) for marker in expected_sections]
             assert positions == sorted(positions), "Unexpected home section order"
-            for material in ("Покупка квартиры", "Продажа квартиры", "Сопровождение сделки", "Советскому району"):
+            for material in ("Покупателям", "Собственникам", "Обсудить покупку", "Обсудить продажу", "Советскому району"):
                 assert material in home_html, (demo, material)
             assert "Новоселье" in (output / "about/index.html").read_text(encoding="utf-8")
             contact_html = (output / "contacts/index.html").read_text(encoding="utf-8")
-            assert "wa.me" not in contact_html and "t.me/" not in contact_html and "max.ru/" not in contact_html
+            assert "wa.me" not in contact_html and "t.me/" not in contact_html
+            assert ('>Написать в MAX</a>' in contact_html) == bool(builder.contacts()["max_url"])
             if demo and not active:
                 assert 'data-demo="property-card"' in (output / "index.html").read_text(encoding="utf-8")
                 assert 'data-demo="property-card"' in (output / "catalog/index.html").read_text(encoding="utf-8")
@@ -137,4 +140,5 @@ if __name__ == "__main__":
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_properties.py")], check=True)
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_catalog.py")], check=True)
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_gallery.py")], check=True)
+    subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_client_journeys.py")], check=True)
     print("Все проверки пройдены.")
