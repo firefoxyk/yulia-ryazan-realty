@@ -312,6 +312,30 @@ class PropertyTests(unittest.TestCase):
         builder.build("/yulia-ryazan-realty/", True, self.output, test_data=True, preliminary=True)
         audit(self.output)
 
+    def test_home_copy_distinguishes_empty_synthetic_and_public_inventory(self):
+        for base in ("/", "/yulia-ryazan-realty/"):
+            with self.subTest(base=base):
+                builder.build(base, False, self.output)
+                home = (self.output / "index.html").read_text(encoding="utf-8")
+                self.assertIn("Актуальные объекты пока не опубликованы", home)
+                self.assertNotIn("Посмотрите актуальные предложения", home)
+                self.assertNotIn('id="properties-title"', home)
+                self.assertIn("Пока здесь нет опубликованных объектов.", (self.output / "catalog/index.html").read_text(encoding="utf-8"))
+                builder.build(base, True, self.output, test_data=True)
+                home = (self.output / "index.html").read_text(encoding="utf-8")
+                self.assertIn("В каталоге сейчас тестовые примеры", home)
+                self.assertNotIn("Посмотрите актуальные предложения", home)
+                self.assertIn(f'href="{base}catalog/">Посмотреть все предложения', home)
+                record = data.validate(fixture(), "public-example.toml", MEDIA, False)
+                # A public active record without a home feature still makes the catalog nonempty.
+                record["featured"] = False
+                with patch.object(builder, "load_catalog", return_value=[record]):
+                    builder.build(base, False, self.output)
+                home = (self.output / "index.html").read_text(encoding="utf-8")
+                self.assertIn("Посмотрите актуальные предложения в Рязани", home)
+                self.assertNotIn("Актуальные объекты пока не опубликованы", home)
+                self.assertNotIn('id="properties-title"', home)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -68,7 +68,7 @@ def audit(output=builder.DIST):
                 assert target in parsed and unquote(parts.fragment) in parsed[target].ids, link
     assert parsed["about/index.html"].about_note
     assert 'id="properties-title"' not in (output / "index.html").read_text(encoding="utf-8")
-    assert "Актуальные объекты пока не опубликованы" in (output / "catalog/index.html").read_text(encoding="utf-8")
+    assert "Пока здесь нет опубликованных объектов." in (output / "catalog/index.html").read_text(encoding="utf-8")
     assert (output / "images/yulia-laryushkina.jpg").read_bytes() == (builder.ROOT / "public/images/yulia-laryushkina.jpg").read_bytes()
     print("OK: preliminary artifact; exactly 4 HTML pages, CSS, Julia photo, .nojekyll; no demo/test/private files; links, phone, noindex and approval notices verified")
 

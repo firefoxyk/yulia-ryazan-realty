@@ -91,10 +91,11 @@ def card(record, base):
                   facts=facts_html(record, 3), url=address(record, base))
 
 
-def section(cards, note=""):
+def section(cards, note="", *, base="/", synthetic=False):
     if not cards:
         return ""
-    return render("property-section.html", cards=cards, note=note)
+    intro = "Посмотрите тестовые примеры оформления. Это не реальные предложения недвижимости." if synthetic else "Посмотрите предложения и откройте подробности, чтобы сравнить варианты с вашими планами."
+    return render("property-section.html", cards=cards, note=note, base=base, intro=intro)
 
 
 def object_page(record, base, phone_href, phone_display):

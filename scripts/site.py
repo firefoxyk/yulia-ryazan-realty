@@ -91,7 +91,13 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
     demo_section = render("src/demo/collection.html", demo_cards=demo_cards) if legacy_demo else ""
     property_cards = "".join(card(record, base) for record in active) + (demo_cards if legacy_demo else "")
     featured_cards = "".join(card(record, base) for record in active if record["featured"])
-    property_section = section(featured_cards) if featured_cards else demo_section
+    property_section = section(featured_cards, base=base, synthetic=all(record["_fixture"] for record in active if record["featured"])) if featured_cards else demo_section
+    if any(not record["_fixture"] for record in active):
+        hero_description = "Посмотрите актуальные предложения в Рязани. А если подходящего варианта пока нет — расскажите мне, что вы ищете."
+    elif active:
+        hero_description = "В каталоге сейчас тестовые примеры, не реальные объявления. Расскажите мне, что вы ищете, — обсудим ваш запрос."
+    else:
+        hero_description = "Актуальные объекты пока не опубликованы. Расскажите мне, что вы ищете, — обсудим район, бюджет и важные для вас условия."
     portrait_note = '<span class="portrait-note" data-demo="portrait-note">Место для фотографии Юлии</span>' if include_demo else ""
     photo_available = (ROOT / "public/images/yulia-laryushkina.jpg").is_file()
     portrait_content = (
@@ -113,8 +119,9 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
         demo_section=demo_section,
         property_cards=property_cards,
         property_section=property_section,
+        hero_description=hero_description,
         catalog_intro='<p class="lead" data-demo="catalog-intro">Тестовые примеры для проверки данных, не реальные объявления.</p>' if test_data and include_demo else ('<p class="lead" data-demo="catalog-intro">Пример карточки для обсуждения дизайна. Не является объявлением.</p>' if legacy_demo else ""),
-        catalog_empty="" if property_cards else f'<div class="empty-state"><h2>Актуальные объекты пока не опубликованы</h2><p>Обсудить покупку или продажу недвижимости можно с Юлией.</p><a class="text-link" href="{base}contacts/">Перейти к контактам ↗</a></div>',
+        catalog_empty="" if property_cards else f'<div class="empty-state"><h2>Пока здесь нет опубликованных объектов.</h2><p>Расскажите Юлии, какую недвижимость вы ищете, — она поможет разобраться с вашим запросом.</p><a class="text-link" href="{base}contacts/">Связаться с Юлией ↗</a></div>',
         about_preview=('<p class="preview-note" ' + ('data-review="about-note"' if preliminary else 'data-demo="about-note"') + '>Материал для согласования: формулировки об услугах, сотрудничестве с агентством, участии специалистов и проверке документов нужно подтвердить с Юлией перед полноценным запуском.</p>') if include_demo or preliminary else "",
         **contact_values,
     )
