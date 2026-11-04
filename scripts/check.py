@@ -136,4 +136,5 @@ if __name__ == "__main__":
         shutil.rmtree(temporary, onexc=builder.retry_windows_lock)
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_properties.py")], check=True)
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_catalog.py")], check=True)
+    subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_gallery.py")], check=True)
     print("Все проверки пройдены.")

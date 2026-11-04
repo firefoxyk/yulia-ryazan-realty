@@ -118,7 +118,7 @@ class CatalogTests(unittest.TestCase):
         builder.build("/", True, self.output, test_data=True)
         self.assertIn("15 сот.", (self.output / "catalog/index.html").read_text(encoding="utf-8"))
         self.assertIn("0.15 га", (self.output / "index.html").read_text(encoding="utf-8"))
-        self.assertIn("0.15 га", (self.output / "objects/test-land/index.html").read_text(encoding="utf-8"))
+        self.assertIn("15 сот.", (self.output / "objects/test-land/index.html").read_text(encoding="utf-8"))
 
     def test_json_cannot_escape_script_element(self):
         record = next(record for record in data.load_catalog(True) if record["status"] == "active")

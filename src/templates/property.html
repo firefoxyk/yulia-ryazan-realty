@@ -1,10 +1,19 @@
-<section class="container page-section">
+<section class="container page-section object-page">
   <a class="back-link" href="${base}catalog/">← Вернуться к объектам</a>
   ${note}
   <div class="page-heading"><p class="eyebrow">${category}</p><h1>${title}</h1><p class="lead">${location}</p></div>
   <div class="property-detail">
-    <figure><div class="property-detail-photo">${media}</div>${caption}</figure>
-    <div><p class="property-price">${price}</p>${facts}<a class="button button-primary" href="${phone_href}">Позвонить Юлии</a><p><a class="text-link" href="${base}contacts/">Контакты</a></p></div>
+    ${gallery}
+    <div class="property-summary"><p class="property-price">${price}</p>${facts}<a class="button button-primary" href="${phone_href}">Позвонить Юлии</a><p><a class="text-link" href="${base}contacts/">Контакты</a></p></div>
   </div>
-  <div class="object-note"><h2>Об объекте</h2>${description}${published}${photos}${materials}</div>
+  <div class="object-note"><h2>Об объекте</h2>${description}${published}${materials}</div>
+  <section class="object-contact" aria-labelledby="object-contact-title"><h2 id="object-contact-title">Заинтересовал объект?</h2><p>Позвоните Юлии — она ответит на вопросы и расскажет подробности.</p><a class="button button-primary" href="${phone_href}">Позвонить ${phone_display}</a><a class="text-link" href="${base}contacts/">Контакты Юлии ↗</a></section>
+  <div class="object-share" data-object-share data-object-path="${permalink}">
+    <p>Постоянную ссылку на объект можно скопировать из адресной строки браузера.</p>
+    <button type="button" class="button button-secondary" data-copy-link hidden>Скопировать ссылку</button>
+    <label for="object-permalink" data-permalink-label hidden>Постоянная ссылка на объект</label>
+    <input id="object-permalink" type="url" readonly data-permalink hidden>
+    <p data-copy-status role="status" aria-live="polite"></p>
+  </div>
+  <script src="${base}assets/object.js" defer></script>
 </section>

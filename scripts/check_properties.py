@@ -225,12 +225,13 @@ class PropertyTests(unittest.TestCase):
 
     def test_photos_order_cover_and_links(self):
         record = data.validate(fixture(), "apartment.toml", MEDIA, True)
-        self.assertEqual([photo["path"] for photo in record["photos"]], ["shared/room-a.svg", "shared/room-b.svg"])
+        self.assertEqual([photo["path"] for photo in record["photos"]], ["shared/room-a.svg", "shared/room-b.svg", "shared/portrait-room.svg"])
         self.assertEqual(record["cover"], 1)
         self.assertIn("room-b.svg", views.photo_html(record, "/prefix/"))
         _, html = views.object_page(record, "/prefix/", "tel:+79657127848", "PHONE")
-        first_link = html.index('href="/prefix/property-media/test/test-apartment/shared/room-a.svg"')
-        second_link = html.index('href="/prefix/property-media/test/test-apartment/shared/room-b.svg"')
+        thumbnails = html.split('<ol class="gallery-thumbs">', 1)[1].split('</ol>', 1)[0]
+        first_link = thumbnails.index('href="/prefix/property-media/test/test-apartment/shared/room-a.svg"')
+        second_link = thumbnails.index('href="/prefix/property-media/test/test-apartment/shared/room-b.svg"')
         self.assertLess(first_link, second_link)
         self.assertIn("Главная фотография: вторая в списке", html)
 

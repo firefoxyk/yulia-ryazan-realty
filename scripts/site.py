@@ -94,6 +94,7 @@ def build(base, include_demo, output=DIST, *, test_data=False, preliminary=False
     property_cards = "".join(card(record, base, plot_in_sotkas=True) for record in catalog_active) + (demo_cards if legacy_demo else "")
     if catalog_active:
         shutil.copyfile(ROOT / "src/assets/catalog.js", output / "assets/catalog.js")
+        shutil.copyfile(ROOT / "src/assets/object.js", output / "assets/object.js")
     featured_cards = "".join(card(record, base) for record in active if record["featured"])
     property_section = section(featured_cards, base=base, synthetic=all(record["_fixture"] for record in active if record["featured"])) if featured_cards else demo_section
     if any(not record["_fixture"] for record in active):

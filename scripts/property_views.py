@@ -5,6 +5,7 @@ import shutil
 from string import Template
 
 from property_data import TYPES, MARKETS, plot_sotkas
+from gallery_views import gallery
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -108,10 +109,6 @@ def object_page(record, base, phone_href, phone_display):
     if record["status"] in ("sold", "withdrawn"):
         message = "Объект продан" if record["status"] == "sold" else "Объявление снято с публикации"
         return message, render("property-unavailable.html", message=message, base=base, note=test_note(record))
-    photo_links = "".join(
-        f'<li><a href="{media_address(record, photo["path"], base)}">{escape(photo["caption"] or photo["alt"])}</a></li>'
-        for photo in record["photos"]
-    )
     materials = ""
     if "floor_plan" in record:
         materials += f'<li><a href="{media_address(record, record["floor_plan"], base)}">Планировка</a></li>'
@@ -121,16 +118,11 @@ def object_page(record, base, phone_href, phone_display):
     market = MARKETS[record["market"]] if "market" in record else ""
     category = TYPES[record["type"]] + (" · " + market if market else "")
     published = f'<p>Опубликовано: {record["published_at"].isoformat()}</p>' if "published_at" in record else ""
-    caption = ""
-    if record["photos"]:
-        value = record["photos"][record["cover"]]["caption"]
-        caption = f"<figcaption>{escape(value)}</figcaption>" if value else ""
     return record["title"], render(
         "property.html", base=base, note=test_note(record), category=escape(category),
         title=escape(record["title"]), price=escape(price(record)), location=escape(location(record)),
-        media=photo_html(record, base), caption=caption, facts=facts_html(record),
+        gallery=gallery(record, base, media_address), facts=facts_html(record, plot_in_sotkas=True),
         description="".join(f"<p>{escape(line)}</p>" for line in record["description"].splitlines() if line.strip()),
-        photos=f'<ul class="property-photo-links">{photo_links}</ul>' if photo_links else "",
         materials=f'<h2>Дополнительные материалы</h2><ul>{materials}</ul>' if materials else "",
-        published=published, phone_href=phone_href, phone_display=phone_display,
+        published=published, phone_href=phone_href, phone_display=phone_display, permalink=address(record, base),
     )
