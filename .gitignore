@@ -1,0 +1,12 @@
+dist/
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+!.env.example
+.check-*/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

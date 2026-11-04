@@ -1,0 +1,4 @@
+# Корень домена: "/". GitHub Pages: "/yulia-ryazan-realty/".
+base_path = "/"
+# Отключить перед запуском: демонстрационная страница и ссылка исчезнут.
+include_demo = true
