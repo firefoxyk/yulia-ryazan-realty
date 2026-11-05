@@ -1,4 +1,5 @@
 """Chrome checks of client paths, conditional home content and static FAQ."""
+import base64
 from pathlib import Path
 import shutil
 from tempfile import TemporaryDirectory
@@ -43,9 +44,10 @@ def check(base, output, browser):
                     builder.build(base, filled, output, test_data=filled, preliminary=not filled)
                 routes = [('home',''),('catalog','catalog/'),('about','about/'),('contacts','contacts/')]
                 if filled: routes.append(('object','objects/test-apartment/'))
-                for width in (1280,390,360):
+                for width in (1280,768,390,360):
                     browser.call('Emulation.setDeviceMetricsOverride', width=width, height=900 if width==1280 else 844, deviceScaleFactor=1, mobile=width<600)
                     for name, route in routes:
+                        if width==768 and name!='about': continue
                         browser.navigate(prefix+route)
                         metric = js('''({
                             width:innerWidth, scrollWidth:document.documentElement.scrollWidth,
@@ -77,7 +79,21 @@ def check(base, output, browser):
                             assert js("document.querySelectorAll('.process-grid li').length===3 && document.querySelectorAll('.faq-section details').length===5")
                             assert js("document.querySelectorAll('.about-directions-grid > li').length===5 && document.querySelectorAll('.about-directions-grid h3').length===5")
                             assert js("[...document.querySelectorAll('.about-directions-grid svg')].length===5 && [...document.querySelectorAll('.about-directions-grid svg')].every(s=>s.getBBox().width>0 && s.getBBox().height>0 && getComputedStyle(s).fill==='none' && s.getAttribute('aria-hidden')==='true')")
-                            assert js("getComputedStyle(document.querySelector('.about-directions-grid')).gridTemplateColumns.split(' ').length==="+str(3 if width==1280 else 1))
+                            assert js('''(()=>{
+                                const grid=document.querySelector('.about-directions-grid'), rows=new Map();
+                                const gap=parseFloat(getComputedStyle(grid).columnGap), bounds=grid.getBoundingClientRect();
+                                for(const card of grid.children){
+                                    const r=card.getBoundingClientRect(), key=Math.round(r.top);
+                                    if(r.left<bounds.left-.5 || r.right>bounds.right+.5 || card.scrollWidth>card.clientWidth) return false;
+                                    if(!rows.has(key)) rows.set(key,[]);
+                                    rows.get(key).push(r);
+                                }
+                                return [...rows.values()].every(row=>
+                                    Math.abs(row[0].left-bounds.left)<1 && Math.abs(row.at(-1).right-bounds.right)<1 &&
+                                    row.every((r,i)=>!i || (Math.abs(r.width-row[0].width)<1 && Math.abs(r.left-row[i-1].right-gap)<1))
+                                );
+                            })()''')
+                            assert js("(()=>{const cards=[...document.querySelector('.about-directions-grid').children], tops=cards.map(c=>Math.round(c.getBoundingClientRect().top));return [...new Set(tops)].map(t=>tops.filter(v=>v===t).length).join(',')})()") == ('3,2' if width==1280 else '2,2,1' if width==768 else '1,1,1,1,1')
                         if name=='contacts':
                             assert js("document.querySelectorAll('.contact-grid .contact-tile').length===1 && !document.body.innerText.includes('WhatsApp') && !document.body.innerText.includes('Telegram')")
                             assert js("document.querySelector('.phone-tile').getBoundingClientRect().width >= document.querySelector('.contact-grid').getBoundingClientRect().width-2")
@@ -89,6 +105,9 @@ def check(base, output, browser):
                             browser.screenshot(f'clarity-{label}-{mode}-{name}-{width}.png')
                         if name=='about' and mode=='empty':
                             browser.screenshot(f'about-directions-{label}-{width}.png')
+                            clip=js("(()=>{const r=document.querySelector('.about-directions').getBoundingClientRect();return {x:r.x+scrollX,y:r.y+scrollY,width:r.width,height:r.height,scale:1}})()")
+                            shot=browser.call('Page.captureScreenshot',format='png',captureBeyondViewport=True,clip=clip)
+                            (SHOTS/f'about-directions-grid-{label}-{width}.png').write_bytes(base64.b64decode(shot['data']))
                             browser.screenshot(f'about-intro-{label}-{width}.png')
                             for _ in range(40):
                                 key('Tab')
