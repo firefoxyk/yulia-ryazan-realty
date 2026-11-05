@@ -74,6 +74,9 @@ def check(base, output, browser):
                                 assert js("document.querySelector('.hero .button-primary').getAttribute('href').endsWith('/contacts/') && !document.querySelector('#properties-title')")
                         if name=='about':
                             assert js("document.querySelectorAll('.process-grid li').length===3 && document.querySelectorAll('.faq-section details').length===5")
+                            assert js("document.querySelectorAll('.about-directions-grid > li').length===5 && document.querySelectorAll('.about-directions-grid h3').length===5")
+                            assert js("[...document.querySelectorAll('.about-directions-grid svg')].length===5 && [...document.querySelectorAll('.about-directions-grid svg')].every(s=>s.getBBox().width>0 && s.getBBox().height>0 && getComputedStyle(s).fill==='none' && s.getAttribute('aria-hidden')==='true')")
+                            assert js("getComputedStyle(document.querySelector('.about-directions-grid')).gridTemplateColumns.split(' ').length==="+str(3 if width==1280 else 1))
                         if name=='contacts':
                             assert js("document.querySelectorAll('.contact-grid .contact-tile').length===1 && !document.body.innerText.includes('WhatsApp') && !document.body.innerText.includes('Telegram')")
                             assert js("document.querySelector('.phone-tile').getBoundingClientRect().width >= document.querySelector('.contact-grid').getBoundingClientRect().width-2")
@@ -83,6 +86,16 @@ def check(base, output, browser):
                                 assert js("document.querySelector('.contact-call').getBoundingClientRect().top > document.querySelector('.contact-identity').getBoundingClientRect().bottom")
                         if width!=360:
                             browser.screenshot(f'clarity-{label}-{mode}-{name}-{width}.png')
+                        if name=='about' and mode=='empty':
+                            browser.screenshot(f'about-directions-{label}-{width}.png')
+                            for _ in range(40):
+                                key('Tab')
+                                if js("document.activeElement.matches('.about-copy .button')"): break
+                            else: raise AssertionError('About contact action not keyboard reachable')
+                            assert js("document.activeElement.matches(':focus-visible') && getComputedStyle(document.activeElement).outlineStyle==='solid'")
+                            key('Enter'); wait("location.pathname==='"+base+"contacts/'")
+                            js("document.querySelector('.main-nav a[href=\""+base+"catalog/\"]').click()")
+                            wait("location.pathname==='"+base+"catalog/'")
                 # Actual keyboard navigation to the main action; never activate a telephone link.
                 browser.navigate(prefix)
                 for _ in range(40):

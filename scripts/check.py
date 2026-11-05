@@ -147,4 +147,5 @@ if __name__ == "__main__":
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_gallery.py")], check=True)
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_client_journeys.py")], check=True)
     subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_seo.py")], check=True)
+    subprocess.run([sys.executable, "-X", "utf8", str(builder.ROOT / "scripts/check_release_tests.py")], check=True)
     print("Все проверки пройдены.")
