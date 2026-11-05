@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "src/data/properties"
 MEDIA = ROOT / "src/media/properties"
 FIXTURES = ROOT / "tests/fixtures"
-TYPES = {"apartment": "Квартира", "house": "Дом", "land": "Земельный участок"}
+TYPES = {"apartment": "Квартира", "house": "Дом", "land": "Земельный участок", "commercial": "Коммерческая недвижимость"}
 MARKETS = {"primary": "Первичный рынок", "secondary": "Вторичный рынок"}
 STATUSES = {"draft", "active", "sold", "withdrawn"}
 
@@ -27,6 +27,7 @@ APPLICABLE = {
     "apartment": {"area_m2", "rooms", "floor", "floors"},
     "house": {"area_m2", "plot_area", "rooms", "floors"},
     "land": {"plot_area"},
+    "commercial": {"area_m2", "floor", "floors"},
 }
 KEYS = {
     "id", "slug", "status", "ever_published", "published_at", "featured",

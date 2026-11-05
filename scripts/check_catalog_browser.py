@@ -11,7 +11,7 @@ from browser_support import open_browser, ROOT, SHOTS
 from check_properties import builder, data
 
 
-ALL = ["test-apartment", "test-apartment-studio", "test-house", "test-house-no-price", "test-land", "test-land-priced"]
+ALL = ["test-apartment", "test-apartment-studio", "test-house", "test-house-no-price", "test-land", "test-land-priced", "test-z-commercial"]
 
 
 def check(base, output, browser):
@@ -52,7 +52,7 @@ def check(base, output, browser):
             set_fields(type="land")
             assert evaluate("['market','rooms','area_min','area_max'].every(n=>{const f=document.querySelector('#catalog-filters').elements.namedItem(n);return f.disabled && f.value==='';})")
             assert evaluate("document.querySelector('#catalog-type-note').textContent.length > 0")
-            set_fields(price_min=""); expect(ALL[4:])
+            set_fields(price_min=""); expect(ALL[4:6])
             assert evaluate("document.querySelector('#catalog-filters [name=type] option[value=apartment]').disabled===false")
             reset(); set_fields(type="apartment", market="secondary")
             set_fields(type="house")
@@ -77,12 +77,21 @@ def check(base, output, browser):
             assert evaluate("!document.querySelector('#catalog-error').hidden")
             reset(); set_fields(plot_min="2", plot_max="1")
             assert evaluate("!document.querySelector('#catalog-error').hidden")
-            reset(); set_fields(sort="price_asc"); expect([ALL[5],ALL[0],ALL[1],ALL[2],ALL[3],ALL[4]])
-            set_fields(sort="price_desc"); expect([ALL[2],ALL[0],ALL[1],ALL[5],ALL[3],ALL[4]])
-            set_fields(sort="newest"); expect([ALL[0],ALL[1],ALL[3],ALL[2],ALL[4],ALL[5]])
+            reset(); set_fields(sort="price_asc"); expect([ALL[5],ALL[6],ALL[0],ALL[1],ALL[2],ALL[3],ALL[4]])
+            set_fields(sort="price_desc"); expect([ALL[2],ALL[0],ALL[1],ALL[6],ALL[5],ALL[3],ALL[4]])
+            set_fields(sort="newest"); expect([ALL[0],ALL[1],ALL[3],ALL[2],ALL[4],ALL[5],ALL[6]])
             set_fields(sort="catalog"); expect(ALL)
             # Reapply a filter after reordering: ties must still follow initial catalog order.
             set_fields(sort="price_desc"); set_fields(location="тестовый"); expect([ALL[2],ALL[0],ALL[1],ALL[5],ALL[3],ALL[4]])
+            reset()
+            # Inapplicable filters must be cleared when changing to commercial.
+            set_fields(type="house", rooms="4", plot_min="8", market="secondary")
+            set_fields(type="commercial"); expect([ALL[6]])
+            assert evaluate("['rooms','plot_min','plot_max','market'].every(n=>{const f=document.querySelector('#catalog-filters').elements.namedItem(n);return f.disabled && f.value==='';})")
+            assert evaluate("document.querySelector('#catalog-type-note').textContent.length>0")
+            set_fields(location="условный", price_min="3000000", price_max="3000000", area_min="45.5", area_max="45.5"); expect([ALL[6]])
+            set_fields(area_min="45.6", area_max="100"); expect([])
+            set_fields(area_min="45.5", area_max="45.5", sort="price_desc"); expect([ALL[6]])
             reset()
             # Native Tab/Enter check: filter focus is visible and the card link opens its real URL.
             evaluate("document.activeElement.blur();document.body.focus()")
@@ -118,6 +127,14 @@ def check(base, output, browser):
                 columns = evaluate("getComputedStyle(document.querySelector('.catalog-grid')).gridTemplateColumns.split(' ').length")
                 assert columns == (3 if width==1280 else 1), (width, columns)
                 browser.screenshot(f"catalog-{label}-populated-{width}.png")
+                set_fields(type="commercial"); expect([ALL[6]])
+                evaluate("document.querySelector('.catalog-disclosure').open=true")
+                assert evaluate("document.documentElement.scrollWidth<=innerWidth")
+                browser.screenshot(f"commercial-{label}-catalog-{width}.png")
+                browser.navigate(origin+base+"objects/test-z-commercial/")
+                assert evaluate("document.documentElement.scrollWidth<=innerWidth && document.body.textContent.includes('Коммерческая недвижимость') && document.body.textContent.includes('Тестовое назначение')")
+                browser.screenshot(f"commercial-{label}-object-{width}.png")
+                browser.navigate(url)
                 set_fields(price_min="90000000")
                 browser.screenshot(f"catalog-{label}-no-results-{width}.png")
                 assert evaluate("!document.querySelector('#catalog-no-results').hidden && document.documentElement.scrollWidth<=innerWidth")
@@ -126,7 +143,7 @@ def check(base, output, browser):
             try:
                 browser.navigate(url)
                 expect(ALL)
-                assert evaluate("document.querySelector('#catalog-filters').hidden && [...document.querySelectorAll('.property-link')].length===6")
+                assert evaluate("document.querySelector('#catalog-filters').hidden && [...document.querySelectorAll('.property-link')].length===7")
                 browser.screenshot(f"catalog-{label}-no-javascript.png")
             finally:
                 browser.call("Emulation.setScriptExecutionDisabled", value=False)
@@ -156,6 +173,28 @@ def check(base, output, browser):
             set_fields(type="apartment"); expect(ALL[:2])
             assert evaluate("['plot_min','plot_max'].every(n=>{const f=document.querySelector('#catalog-filters').elements.namedItem(n);return f.disabled && f.value==='';})")
             reset()
+            # A commercial object without optional values remains accessible.
+            commercial = next(r for r in records if r.get('type')=='commercial')
+            for field in ('price','area_m2','floor','floors','features'):
+                commercial.pop(field,None)
+            commercial['photos']=[]; commercial['cover']=None
+            commercial['features']={}
+            with patch.object(builder, 'load_catalog', return_value=records):
+                builder.build(base, True, output, test_data=True)
+            browser.navigate(url)
+            set_fields(type='commercial'); expect([ALL[6]])
+            assert evaluate("['rooms','plot_min','plot_max','area_min','area_max','price_min','price_max','market'].every(n=>document.querySelector('#catalog-filters').elements.namedItem(n).disabled)")
+            assert evaluate("document.querySelector('[data-property-id=test-z-commercial]').textContent.includes('Цена по запросу')")
+            browser.navigate(origin+base+'objects/test-z-commercial/')
+            assert evaluate("document.body.innerText.includes('Фотографий пока нет') && !document.querySelector('.object-gallery')")
+            for status in ('sold','withdrawn'):
+                commercial['status']=status
+                with patch.object(builder, 'load_catalog', return_value=records):
+                    builder.build(base, True, output, test_data=True)
+                browser.navigate(url)
+                assert evaluate("!document.querySelector('[name=type] option[value=commercial]') && !document.querySelector('[data-property-id=test-z-commercial]')")
+                browser.navigate(origin+base+'objects/test-z-commercial/')
+                assert evaluate("document.body.textContent.includes('Предложение неактуально') && !document.querySelector('.object-gallery')")
             builder.build(base, False, output, preliminary=True)
             for width in (1280, 390, 360):
                 browser.call("Emulation.setDeviceMetricsOverride", width=width, height=900 if width==1280 else 844, deviceScaleFactor=1, mobile=width<600)

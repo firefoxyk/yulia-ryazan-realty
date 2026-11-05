@@ -120,7 +120,7 @@ def check(base, output, browser):
                     assert js("!!document.querySelector('.hero .button-primary') && document.querySelectorAll('.client-grid article').length===2")
                     browser.navigate(prefix+'catalog/')
                     if filled:
-                        assert js("document.querySelector('#catalog-filters').hidden && document.querySelectorAll('[data-property-id]').length===6")
+                        assert js("document.querySelector('#catalog-filters').hidden && document.querySelectorAll('[data-property-id]').length===7")
                     else: assert js("!!document.querySelector('.empty-state')")
                 finally:
                     browser.call('Emulation.setScriptExecutionDisabled',value=False)

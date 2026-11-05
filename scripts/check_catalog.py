@@ -49,7 +49,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_options_appear_and_disappear_with_active_types_and_markets(self):
         records = data.load_catalog(True)
-        public = [record for record in records if record["status"] == "active" and record["type"] != "land"]
+        public = [record for record in records if record["status"] == "active" and record["type"] in ("apartment", "house")]
         html = self.build_records(public)
         self.assertEqual(CatalogMarkup(html).options["type"], ["", "apartment", "house"])
         land = next(record for record in records if record.get("type") == "land" and record["status"] == "active")
@@ -90,6 +90,56 @@ class CatalogTests(unittest.TestCase):
         html = self.build_records(records)
         self.assertNotIn("newest", CatalogMarkup(html).options["sort"])
         self.assertIn("без сортировки по новизне", html)
+
+    def test_commercial_validation_and_optional_characteristics(self):
+        raw = shared.fixture('commercial')
+        record = data.validate(raw, 'commercial.toml', shared.MEDIA, True)
+        self.assertEqual(record['type'], 'commercial')
+        self.assertNotIn('market', record)
+        for field in ('rooms', 'plot_area'):
+            invalid = deepcopy(raw)
+            invalid[field] = 2
+            with self.assertRaises(data.PropertyError):
+                data.validate(invalid, 'commercial.toml', shared.MEDIA, True)
+        for field in ('price','area_m2','floor','floors','photos','features'):
+            raw.pop(field, None)
+        record = data.validate(raw, 'minimal.toml', shared.MEDIA, True)
+        html = self.build_records([record])
+        self.assertIn('Цена по запросу', html)
+        for field in ('price','area_m2','rooms','plot_sotkas','market'):
+            self.assertNotIn(field, metadata(html)[0])
+        page = (self.output/'objects/test-z-commercial/index.html').read_text(encoding='utf-8')
+        self.assertIn('Фотографий пока нет', page)
+        self.assertNotIn('<dt>Этаж</dt>', page)
+        self.assertNotIn('og:image', page)
+
+    def test_commercial_category_statuses_feature_and_permalink(self):
+        record = data.validate(shared.fixture('commercial'), 'commercial.toml', shared.MEDIA, True)
+        public = [r for r in data.load_catalog(True) if r.get('type')!='commercial']
+        self.assertNotIn('commercial', CatalogMarkup(self.build_records(public)).options['type'])
+        html = self.build_records(public+[record])
+        self.assertIn('commercial', CatalogMarkup(html).options['type'])
+        self.assertEqual(CatalogMarkup(html).ids.count(record['id']), 1)
+        self.assertIn('data-property-id="test-z-commercial"', (self.output/'index.html').read_text(encoding='utf-8'))
+        page = (self.output/'objects/test-z-commercial/index.html').read_text(encoding='utf-8')
+        self.assertIn('Коммерческая недвижимость', page)
+        self.assertIn('<dt>Назначение</dt>', page)
+        self.assertIn('tel:+79657127848', page)
+        self.assertIn('data-copy-link', page)
+        record['featured'] = False
+        self.build_records([record])
+        self.assertNotIn('id="properties-title"', (self.output/'index.html').read_text(encoding='utf-8'))
+        for status in ('sold','withdrawn'):
+            record.update(status=status, title='PRIVATE-COMMERCIAL', description='PRIVATE-COMMERCIAL')
+            html = self.build_records(public+[record])
+            self.assertNotIn('commercial', CatalogMarkup(html).options['type'])
+            page = (self.output/'objects/test-z-commercial/index.html').read_text(encoding='utf-8')
+            self.assertNotIn('PRIVATE-COMMERCIAL', page)
+            self.assertNotIn('property-media', page)
+            self.assertIn('noindex, nofollow', page)
+        record.update(status='draft', ever_published=False)
+        self.build_records([record])
+        self.assertFalse((self.output/'objects/test-z-commercial').exists())
 
     def test_plot_units_precision_and_missing_values_without_mutating_records(self):
         cases = ((500, "m2", 5, "5 сот."), (805.3, "m2", 8.053, "8,053 сот."),
