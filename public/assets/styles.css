@@ -242,9 +242,14 @@ main { min-height: 55vh; outline: none; }
 .service-number { font-size: .7rem; color: var(--accent); }
 .service-item h3 { font-size: 1.55rem; line-height: 1.25; margin-top: .75rem; }
 .service-item p { margin-top: 1rem; color: var(--muted); font-size: .85rem; }
-.about-prose { margin-top: 1.5rem; }
-.about-prose p { color: var(--muted); font-size: .9rem; }
-.about-prose p + p { margin-top: 1rem; }
+.about-intro { margin-top: 1.5rem; font-size: 1rem; }
+.about-topics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 1.5rem; list-style: none; margin: 1.5rem 0 0; padding: 0; }
+.about-topics li { min-width: 0; }
+.about-topics h3 { font: 600 .95rem/1.45 var(--sans); color: var(--accent); }
+.about-topics p { margin-top: .4rem; color: var(--muted); font-size: .9rem; }
+@media (max-width: 960px) {
+  .about-topics { grid-template-columns: 1fr; }
+}
 .about-directions { padding-block: 1rem 3.5rem; }
 .about-directions h2 { max-width: 24ch; }
 .about-directions-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; list-style: none; margin: 2rem 0 0; padding: 0; }

@@ -72,7 +72,10 @@ class ClientJourneyTests(unittest.TestCase):
             self.assertIn(material, about)
         self.assertIn('С какой недвижимостью я работаю', about)
         self.assertLess(about.index('id="directions-title"'), about.index('id="process-title"'))
-        self.assertIn('Сотрудничаю с командой агентства «Новоселье». При необходимости к вопросам сделки подключаются специалисты агентства.', about)
+        self.assertIn('Сотрудничаю с агентством «Новоселье». При необходимости к вопросам сделки подключаются специалисты агентства.', about)
+        self.assertIn('Обсудить мою ситуацию', about)
+        for topic in ('Начинаю с вашей ситуации.', 'Уже нашли объект?', 'Нужно сначала продать, а потом купить?', 'Работаю с поддержкой команды.'):
+            self.assertIn(f'<h3>{topic}</h3>', about)
         home = (self.output / 'index.html').read_text(encoding='utf-8')
         for material in ('от первого обращения до вручения ключей', 'Оценка объекта и сбор документов', 'Показы и переговоры', 'Работа с договором'):
             self.assertIn(material, home)

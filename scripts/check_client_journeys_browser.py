@@ -73,6 +73,7 @@ def check(base, output, browser):
                                 assert js("document.querySelector('.hero h1').textContent==='Покупаете или продаёте недвижимость?'")
                                 assert js("document.querySelector('.hero .button-primary').getAttribute('href').endsWith('/contacts/') && !document.querySelector('#properties-title')")
                         if name=='about':
+                            assert js("document.querySelectorAll('.about-topics > li').length===4 && document.querySelectorAll('.about-topics h3').length===4 && !!document.querySelector('.about-intro')")
                             assert js("document.querySelectorAll('.process-grid li').length===3 && document.querySelectorAll('.faq-section details').length===5")
                             assert js("document.querySelectorAll('.about-directions-grid > li').length===5 && document.querySelectorAll('.about-directions-grid h3').length===5")
                             assert js("[...document.querySelectorAll('.about-directions-grid svg')].length===5 && [...document.querySelectorAll('.about-directions-grid svg')].every(s=>s.getBBox().width>0 && s.getBBox().height>0 && getComputedStyle(s).fill==='none' && s.getAttribute('aria-hidden')==='true')")
@@ -88,6 +89,7 @@ def check(base, output, browser):
                             browser.screenshot(f'clarity-{label}-{mode}-{name}-{width}.png')
                         if name=='about' and mode=='empty':
                             browser.screenshot(f'about-directions-{label}-{width}.png')
+                            browser.screenshot(f'about-intro-{label}-{width}.png')
                             for _ in range(40):
                                 key('Tab')
                                 if js("document.activeElement.matches('.about-copy .button')"): break
